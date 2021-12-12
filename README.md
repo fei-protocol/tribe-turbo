@@ -1,11 +1,11 @@
-# dapptools-template
+# fei-boost
 
-Streamlined template for getting started with DappTools and Solmate.
+aaaaa im boooooooosting
 
 ## Getting Started
 
 ```sh
-git clone https://github.com/transmissions11/dapptools-template.git
-cd dapptools-template
+git clone https://github.com/transmissions11/fei-boost.git
+cd fei-boost
 make
 ```
