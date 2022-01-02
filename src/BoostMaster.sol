@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.10;
 
-import {BoostSafe} from "./BoostSafe.sol";
+import {TurboSafe} from "./TurboSafe.sol";
 
-contract BoostMaster {
-    event BoostSafeCreated(address indexed creator, BoostSafe safe);
+contract TurboMaster {
+    event TurboSafeCreated(address indexed creator, TurboSafe safe);
 
-    function createSafe() external returns (BoostSafe safe) {
-        safe = new BoostSafe();
+    function createSafe() external returns (TurboSafe safe) {
+        safe = new TurboSafe();
 
-        emit BoostSafeCreated(msg.sender, safe);
+        emit TurboSafeCreated(msg.sender, safe);
     }
 }

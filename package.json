@@ -1,14 +1,14 @@
 {
-  "name": "fei-boost",
+  "name": "fei-turbo",
   "license": "AGPL-3.0-only",
   "version": "1.0.0",
-  "description": "aaaaa im boooooooosting",
+  "description": "Fuse liquidity accelerator for friends of the Tribe.",
   "files": [
     "src/**/*.sol"
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/transmissions11/fei-boost.git"
+    "url": "git+https://github.com/fei-protocol/fei-turbo.git"
   },
   "devDependencies": {
     "prettier": "^2.3.1",
