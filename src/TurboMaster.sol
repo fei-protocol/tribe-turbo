@@ -44,7 +44,7 @@ contract TurboMaster is Auth {
 
     TurboCustodian public custodian;
 
-    function setCustodian(TurboCustodian _custodian) public requiresAuth {
+    function setCustodian(TurboCustodian _custodian) external requiresAuth {
         custodian = _custodian;
 
         emit CustodianUpdated(msg.sender, custodian);
@@ -68,7 +68,7 @@ contract TurboMaster is Auth {
 
     event FeesReclaimed(address indexed user, uint256 feiAmount);
 
-    function reclaimFees(uint256 feiAmount) public requiresAuth {
+    function reclaimFees(uint256 feiAmount) external requiresAuth {
         emit FeesReclaimed(msg.sender, feiAmount);
 
         fei.safeTransfer(msg.sender, feiAmount);

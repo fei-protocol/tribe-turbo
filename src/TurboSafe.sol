@@ -79,7 +79,7 @@ contract TurboSafe is Auth, ERC20 {
                              VAULT LOGIC
     //////////////////////////////////////////////////////////////*/
 
-    function deposit(address to, uint256 underlyingAmount) public requiresAuth returns (uint256 shares) {
+    function deposit(address to, uint256 underlyingAmount) external requiresAuth returns (uint256 shares) {
         _mint(to, shares = underlyingAmount.fdiv(exchangeRate(), baseUnit));
 
         totalHoldings += underlyingAmount;
@@ -91,7 +91,7 @@ contract TurboSafe is Auth, ERC20 {
         require(underlyingCToken.mint(underlyingAmount) == 0, "MINT_FAILED");
     }
 
-    function withdraw(address to, uint256 underlyingAmount) public requiresAuth returns (uint256 shares) {
+    function withdraw(address to, uint256 underlyingAmount) external requiresAuth returns (uint256 shares) {
         _burn(msg.sender, shares = underlyingAmount.fdiv(exchangeRate(), baseUnit));
 
         totalHoldings -= underlyingAmount;
@@ -101,7 +101,7 @@ contract TurboSafe is Auth, ERC20 {
         underlying.safeTransfer(to, underlyingAmount);
     }
 
-    function redeem(address to, uint256 shareAmount) public requiresAuth returns (uint256 underlyingAmount) {
+    function redeem(address to, uint256 shareAmount) external requiresAuth returns (uint256 underlyingAmount) {
         _burn(msg.sender, shareAmount);
 
         totalHoldings -= underlyingAmount = shareAmount.fmul(exchangeRate(), baseUnit);
@@ -121,7 +121,7 @@ contract TurboSafe is Auth, ERC20 {
                              BOOST LOGIC
     //////////////////////////////////////////////////////////////*/
 
-    function boost(CERC20 cToken, uint256 feiAmount) public requiresAuth {
+    function boost(CERC20 cToken, uint256 feiAmount) external requiresAuth {
         require(master.custodian().isAuthorizedToBoost(this, cToken, feiAmount), "CUSTODIAN_REJECTED");
 
         getTotalFeiDeposited[cToken] += feiAmount;
@@ -135,7 +135,7 @@ contract TurboSafe is Auth, ERC20 {
         require(cToken.mint(feiAmount) == 0, "MINT_FAILED");
     }
 
-    function less(CERC20 cToken, uint256 feiAmount) public requiresAuth {
+    function less(CERC20 cToken, uint256 feiAmount) external requiresAuth {
         slurp(cToken); // aaa im sluuuurping
 
         getTotalFeiDeposited[cToken] -= feiAmount;
