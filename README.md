@@ -2,6 +2,8 @@
 
 Fuse liquidity accelerator for friends of the Tribe.
 
+![Diagram](https://lucid.app/publicSegments/view/25002d8e-f4ed-4ba7-bec0-cdd3720f9add/image.png)
+
 ## Terminology
 
 - `boost`: borrow fei and deposit it into an authorized cToken
