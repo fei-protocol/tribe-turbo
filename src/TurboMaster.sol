@@ -57,7 +57,7 @@ contract TurboMaster is Auth {
     event TurboSafeCreated(address indexed user, ERC20 indexed underlying, TurboSafe safe);
 
     function createSafe(ERC20 underlying) external requiresAuth returns (TurboSafe safe) {
-        safe = new TurboSafe{salt: bytes32(0)}(msg.sender, underlying);
+        safe = new TurboSafe(msg.sender, underlying);
 
         emit TurboSafeCreated(msg.sender, underlying, safe);
     }
