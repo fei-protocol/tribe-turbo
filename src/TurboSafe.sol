@@ -71,7 +71,7 @@ contract TurboSafe is Auth, ERC20 {
         feiCToken = pool.cTokensByUnderlying(underlying);
         underlyingCToken = pool.cTokensByUnderlying(underlying);
 
-        // the provided underlying is not supported by the boost pool
+        // the provided underlying is not supported by the pool
         if (address(underlyingCToken) == address(0)) revert("UNSUPPORTED_UNDERLYING");
     }
 
