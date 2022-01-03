@@ -163,12 +163,12 @@ contract TurboSafe is Auth, ERC20 {
                           EMERGENCY LOGIC
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice someone must repay debt on behalf of the safe first
     function gib(CERC20 cToken, uint256 underlyingAmount) external {
         require(master.custodian().isAuthorizedToImpound(this, cToken, underlyingAmount), "CUSTODIAN_REJECTED");
 
         totalHoldings -= underlyingAmount; // only spot in the code where the safe can register a loss
 
-        // caller is expected to have already repaid debt on behalf of the safe
         require(underlyingCToken.redeemUnderlying(underlyingAmount) == 0, "REDEEM_FAILED");
 
         underlying.safeTransfer(msg.sender, underlyingAmount);
