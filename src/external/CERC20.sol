@@ -15,4 +15,6 @@ interface CERC20 {
     function redeemUnderlying(uint256 amount) external returns (uint256);
 
     function balanceOfUnderlying(address user) external returns (uint256);
+
+    function borrowBalanceCurrent(address user) external returns (uint256);
 }
