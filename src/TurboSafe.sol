@@ -165,7 +165,10 @@ contract TurboSafe is Auth, ERC20 {
 
     /// @notice someone must repay debt on behalf of the safe first
     function gib(CERC20 cToken, uint256 underlyingAmount) external {
-        require(master.custodian().isAuthorizedToImpound(this, cToken, underlyingAmount), "CUSTODIAN_REJECTED");
+        require(
+            master.custodian().isAuthorizedToImpound(msg.sender, this, cToken, underlyingAmount),
+            "CUSTODIAN_REJECTED"
+        );
 
         totalHoldings -= underlyingAmount; // only spot in the code where the safe can register a loss
 
