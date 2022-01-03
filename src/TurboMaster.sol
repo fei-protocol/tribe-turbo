@@ -1,14 +1,26 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.10;
 
+import {ERC20} from "solmate/tokens/ERC20.sol";
+
+import {Comptroller} from "./external/Comptroller.sol";
+
 import {TurboSafe} from "./TurboSafe.sol";
 
 contract TurboMaster {
-    event TurboSafeCreated(address indexed creator, TurboSafe safe);
+    Comptroller public immutable boostPool;
 
-    function createSafe() external returns (TurboSafe safe) {
-        safe = new TurboSafe();
+    constructor(Comptroller _boostPool) public {
+        boostPool = _boostPool;
+    }
 
-        emit TurboSafeCreated(msg.sender, safe);
+    event TurboSafeCreated(address indexed user, ERC20 indexed underlying, TurboSafe safe);
+
+    function createSafe(ERC20 underlying) external returns (TurboSafe safe) {
+        safe = new TurboSafe{salt: bytes32(0)}(msg.sender, underlying);
+
+        // TODO: whitelist to boost pool if sender is allowed? who do we whitelist?
+
+        emit TurboSafeCreated(msg.sender, underlying, safe);
     }
 }
