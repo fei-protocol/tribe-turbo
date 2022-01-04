@@ -268,10 +268,7 @@ contract TurboSafe is Auth, ERC20 {
     /// @dev Debt must be repaid in advance, or the redemption will fail.
     function gib(uint256 underlyingAmount) external {
         // Check that Custodian consents to the caller impounding this amount of collateral.
-        require(
-            master.custodian().isAuthorizedToImpound(msg.sender, this, underlying, underlyingAmount),
-            "CUSTODIAN_REJECTED"
-        );
+        require(master.custodian().isAuthorizedToImpound(msg.sender, this, underlyingAmount), "CUSTODIAN_REJECTED");
 
         // Update the total holdings of the Safe proportionately.
         totalHoldings -= underlyingAmount;

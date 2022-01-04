@@ -31,13 +31,11 @@ contract TurboCustodian {
     /// @notice Returns whether a given user is allowed to impound
     /// a specific amount of collateral from a specific Safe contract.
     /// @param user The user to check is authorized to impound.
-    /// @param safe The Safe to check that is allowed to impound from.
-    /// @param underlying The underlying token the Safe holds.
+    /// @param safe The Safe to check the user is allowed to impound from.
     /// @param underlyingAmount The amount of underlying tokens to check is allowed.
     function isAuthorizedToImpound(
         address user,
         TurboSafe safe,
-        ERC20 underlying,
         uint256 underlyingAmount
     ) external pure returns (bool) {
         return true; // TODO: Implement.
