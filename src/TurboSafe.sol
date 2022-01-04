@@ -11,6 +11,9 @@ import {Comptroller} from "./external/Comptroller.sol";
 
 import {TurboMaster} from "./TurboMaster.sol";
 
+/// @title Turbo Safe (tsToken)
+/// @author Transmissions11
+/// @notice Fuse liquidity accelerator.
 contract TurboSafe is Auth, ERC20 {
     using SafeTransferLib for ERC20;
     using FixedPointMathLib for uint256;
@@ -190,59 +193,93 @@ contract TurboSafe is Auth, ERC20 {
                              BOOST LOGIC
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice Borrow Fei from the Turbo Fuse Pool and deposit it into an authorized cToken.
+    /// @param cToken The cToken to deposit the borrowed Fei into.
+    /// @param feiAmount The amount of Fei to borrow and supply into the cToken.
+    /// @dev Automatically accrues any fees earned by the Safe in the cToken to the Master.
     function boost(CERC20 cToken, uint256 feiAmount) external requiresAuth {
-        require(master.custodian().isAuthorizedToBoost(this, cToken, feiAmount), "CUSTODIAN_REJECTED");
-
-        getTotalFeiDeposited[cToken] += feiAmount;
-
+        // Ensure the cToken has Fei underlying it.
         require(cToken.underlying() == fei, "NOT_FEI");
 
+        // Check that the custodian consents to a boost to the cToken of this amount from this safe.
+        require(master.custodian().isAuthorizedToBoost(this, cToken, feiAmount), "CUSTODIAN_REJECTED");
+
+        slurp(cToken); // Accrue any fees earned by the cToken to the Master.
+
+        // Update the total Fei deposited into the cToken proportionately.
+        getTotalFeiDeposited[cToken] += feiAmount;
+
+        // Borrow the Fei amount from the Fei cToken in the Turbo Fuse Pool.
         require(feiCToken.borrow(feiAmount) == 0, "BORROW_FAILED");
 
+        // Approve the borrowed Fei to the specified cToken.
         fei.safeApprove(address(cToken), feiAmount);
 
+        // Mint the Fei into the specified cToken.
         require(cToken.mint(feiAmount) == 0, "MINT_FAILED");
     }
 
+    /// @notice Withdraw Fei from a deposited cToken and use it to repay debt in the Turbo Fuse Pool.
+    /// @param cToken The cToken to withdraw the Fei from.
+    /// @param feiAmount The amount of Fei to withdraw from the cToken and repay in the Turbo Fuse Pool.
+    /// @dev Automatically accrues any fees earned by the Safe in the cToken to the Master.
     function less(CERC20 cToken, uint256 feiAmount) external requiresAuth {
-        slurp(cToken); // aaa im sluuuurping
+        slurp(cToken); // Accrue any fees earned by the cToken to the Master.
 
+        // Update the total Fei deposited into the cToken proportionately.
         getTotalFeiDeposited[cToken] -= feiAmount;
 
+        // Withdraw the specified amount of Fei from the cToken.
         require(cToken.redeemUnderlying(feiAmount) == 0, "REDEEM_FAILED");
 
-        fei.safeApprove(address(cToken), feiAmount);
+        // Approve the specified amount of Fei to Fei cToken in the Turbo Fuse Pool.
+        fei.safeApprove(address(feiCToken), feiAmount);
 
+        // Get out current amount of Fei debt in the Turbo Fuse Pool.
         uint256 feiDebt = feiCToken.borrowBalanceCurrent(address(this));
 
-        if (feiAmount > feiDebt) feiAmount = feiDebt; // someone repaid on our behalf
+        // If someone repaid on our behalf, repay the minimum.
+        if (feiAmount > feiDebt) feiAmount = feiDebt;
 
+        // Repay the specified amount of Fei in the Turbo Fuse Pool.
         require(feiCToken.repayBorrow(feiAmount) == 0, "REPAY_FAILED");
     }
 
+    /// @notice Accrue any fees earned by the Safe in the cToken to the Master.
+    /// @param cToken The cToken to accrue fees from and send to the Master.
     function slurp(CERC20 cToken) public {
+        // Compute the amount of Fei fees the Safe generated in the cToken.
         uint256 feesEarned = cToken.balanceOfUnderlying(address(this)) - getTotalFeiDeposited[cToken];
 
-        require(cToken.redeemUnderlying(feesEarned) == 0, "REDEEM_FAILED");
+        // If we have any fees not yet accrued, redeem them as Fei from the cToken.
+        if (feesEarned != 0) require(cToken.redeemUnderlying(feesEarned) == 0, "REDEEM_FAILED");
 
-        underlying.safeTransfer(address(master), feesEarned); // master lets wards claim
+        // Transfer the redeemed Fei to the Master.
+        underlying.safeTransfer(address(master), feesEarned);
     }
 
     /*///////////////////////////////////////////////////////////////
                           EMERGENCY LOGIC
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice someone must repay debt on behalf of the safe first
-    function gib(CERC20 cToken, uint256 underlyingAmount) external {
+    /// @notice Impound a specific amount of a Safe's collateral.
+    /// @param underlyingAmount The amount of the underlying to impound.
+    /// @dev Requires special authorization from the Custodian.
+    /// @dev Debt must be repaid in advance, or the redemption will fail.
+    function gib(uint256 underlyingAmount) external {
+        // Check that Custodian consents to the caller impounding this amount of collateral.
         require(
-            master.custodian().isAuthorizedToImpound(msg.sender, this, cToken, underlyingAmount),
+            master.custodian().isAuthorizedToImpound(msg.sender, this, underlying, underlyingAmount),
             "CUSTODIAN_REJECTED"
         );
 
-        totalHoldings -= underlyingAmount; // only spot in the code where the safe can register a loss
+        // Update the total holdings of the Safe proportionately.
+        totalHoldings -= underlyingAmount;
 
+        // Withdraw the specified amount of underlying tokens from the Turbo Fuse Pool.
         require(underlyingCToken.redeemUnderlying(underlyingAmount) == 0, "REDEEM_FAILED");
 
+        // Transfer the underlying tokens to the authorized caller.
         underlying.safeTransfer(msg.sender, underlyingAmount);
     }
 }

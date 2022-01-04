@@ -11,6 +11,9 @@ import {TurboCustodian} from "./TurboCustodian.sol";
 
 import {TurboSafe} from "./TurboSafe.sol";
 
+/// @title Turbo Master
+/// @author Transmissions11
+/// @notice Factory for creating and managing Turbo Safes.
 contract TurboMaster is Auth {
     using SafeTransferLib for ERC20;
 
@@ -58,6 +61,8 @@ contract TurboMaster is Auth {
 
     function createSafe(ERC20 underlying) external requiresAuth returns (TurboSafe safe) {
         safe = new TurboSafe(msg.sender, underlying);
+
+        // TODO: authorize the safe to the turbo fuse pool
 
         emit TurboSafeCreated(msg.sender, underlying, safe);
     }

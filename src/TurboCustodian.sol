@@ -7,6 +7,9 @@ import {CERC20} from "./external/CERC20.sol";
 
 import {TurboSafe} from "./TurboSafe.sol";
 
+/// @title Turbo Custodian
+/// @author Transmissions11
+/// @notice Authorization module for Turbo Safes.
 contract TurboCustodian {
     /*///////////////////////////////////////////////////////////////
                          AUTHORIZATION LOGIC
@@ -23,7 +26,7 @@ contract TurboCustodian {
     function isAuthorizedToImpound(
         address user,
         TurboSafe safe,
-        CERC20 cToken,
+        ERC20 underlying,
         uint256 underlyingAmount
     ) external pure returns (bool) {
         return true; // todo
