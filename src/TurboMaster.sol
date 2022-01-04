@@ -21,14 +21,21 @@ contract TurboMaster is Auth {
                                IMMUTABLES
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice  The Turbo Fuse Pool the Master and its Safes use.
     Comptroller public immutable pool;
 
+    /// @notice The Fei token on the network.
     ERC20 public immutable fei;
 
     /*///////////////////////////////////////////////////////////////
                               CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice Creates a new Turbo Master contract.
+    /// @param _pool The Turbo Fuse Pool the Master will use.
+    /// @param _fei The Fei token on the network.
+    /// @param _owner The owner of the Master.
+    /// @param _authority The Authority of the Master.
     constructor(
         Comptroller _pool,
         ERC20 _fei,
@@ -43,12 +50,18 @@ contract TurboMaster is Auth {
                            CUSTODIAN STORAGE
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice Emitted when the Custodian is updated.
+    /// @param user The user who triggered the update of the Custodian.
+    /// @param newCustodian The new Custodian contract used by the Master.
     event CustodianUpdated(address indexed user, TurboCustodian newCustodian);
 
+    /// @notice The Custodian contract used by the Master and its Safes.
     TurboCustodian public custodian;
 
-    function setCustodian(TurboCustodian _custodian) external requiresAuth {
-        custodian = _custodian;
+    /// @notice Update the Custodian used by the Master.
+    /// @param newCustodian The new Custodian contract to be used by the Master.
+    function setCustodian(TurboCustodian newCustodian) external requiresAuth {
+        custodian = newCustodian;
 
         emit CustodianUpdated(msg.sender, custodian);
     }
@@ -57,12 +70,19 @@ contract TurboMaster is Auth {
                           SAFE CREATION LOGIC
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice Emitted when a new Safe is created.
+    /// @param user The user who created the Safe.
+    /// @param underlying The underlying token of the Safe.
+    /// @param safe The newly deployed Safe contract.
     event TurboSafeCreated(address indexed user, ERC20 indexed underlying, TurboSafe safe);
 
+    /// @notice Creates a new Turbo Safe which supports a specific underlying token.
+    /// @param underlying The ERC20 token that the Safe should accept.
+    /// @return safe The newly deployed Turbo Safe which accepts the provided underlying token.
     function createSafe(ERC20 underlying) external requiresAuth returns (TurboSafe safe) {
         safe = new TurboSafe(msg.sender, underlying);
 
-        // TODO: authorize the safe to the turbo fuse pool
+        // TODO: Authorize the safe to the Turbo Fuse Pool.
 
         emit TurboSafeCreated(msg.sender, underlying, safe);
     }
@@ -71,11 +91,17 @@ contract TurboMaster is Auth {
                          FEE RECLAMATION LOGIC
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice Emitted when fees are reclaimed by an authorized user.
+    /// @param user The authorized user who reclaimed the fees.
+    /// @param feiAmount The amount of Fei fees that were reclaimed.
     event FeesReclaimed(address indexed user, uint256 feiAmount);
 
+    /// @notice Reclaims the fees generated as Fei sent to the Master.
+    /// @param feiAmount The amount of Fei fees that should be reclaimed.
     function reclaimFees(uint256 feiAmount) external requiresAuth {
         emit FeesReclaimed(msg.sender, feiAmount);
 
+        // Transfer the Fei fees to the authorized caller.
         fei.safeTransfer(msg.sender, feiAmount);
     }
 }
