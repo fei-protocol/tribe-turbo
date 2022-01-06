@@ -36,7 +36,7 @@ contract TurboSafe is Auth, ERC20 {
 
     /// @notice The base unit of the underlying token and hence tsToken.
     /// @dev Equal to 10 ** decimals. Used for fixed point arithmetic.
-    uint256 public immutable baseUnit;
+    uint256 internal immutable baseUnit;
 
     /// @notice Maps Fei cTokens to the amount of Fei deposited to them.
     /// @dev Used to determine the fees to be paid back to the Master.
@@ -92,7 +92,7 @@ contract TurboSafe is Auth, ERC20 {
         feiCToken = pool.cTokensByUnderlying(underlying);
         underlyingCToken = pool.cTokensByUnderlying(underlying);
 
-        // If the provided underlying is not supported by the pool, revert.
+        // If the provided underlying is not supported by the Turbo Fuse Pool, revert.
         if (address(underlyingCToken) == address(0)) revert("UNSUPPORTED_UNDERLYING");
     }
 
@@ -101,15 +101,15 @@ contract TurboSafe is Auth, ERC20 {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Emitted after a successful deposit.
-    /// @param user The address that deposited into the Vault.
+    /// @param from The address that deposited into the Vault.
     /// @param underlyingAmount The amount of underlying tokens that were deposited.
-    event Deposit(address indexed user, address indexed to, uint256 underlyingAmount);
+    event Deposit(address indexed from, address indexed to, uint256 underlyingAmount);
 
     /// @notice Emitted after a successful withdrawal.
-    /// @param user The address that withdrew from the Vault.
+    /// @param from The address that withdrew from the Vault.
     /// @param to The destination for withdrawn tokens.
     /// @param underlyingAmount The amount of underlying tokens that were withdrawn.
-    event Withdraw(address indexed user, address indexed to, uint256 underlyingAmount);
+    event Withdraw(address indexed from, address indexed to, uint256 underlyingAmount);
 
     /// @notice Deposit a specific amount of underlying tokens.
     /// @param underlyingAmount The amount of the underlying token to deposit.
