@@ -17,6 +17,8 @@ import {TurboSafe} from "./TurboSafe.sol";
 /// @author Transmissions11
 /// @notice Factory for creating and managing Turbo Safes.
 contract TurboMaster is Auth {
+    // TODO: remove impounder, store gibber
+
     using SafeTransferLib for ERC20;
 
     /*///////////////////////////////////////////////////////////////
