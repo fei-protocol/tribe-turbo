@@ -112,6 +112,8 @@ contract TurboMaster is Auth {
                              SAFE STORAGE
     //////////////////////////////////////////////////////////////*/
 
+    uint256 public totalBoosted;
+
     /// @notice Maps Safe addresses to a boolean confirming they exist.
     mapping(TurboSafe => bool) public isSafe;
 
@@ -146,21 +148,17 @@ contract TurboMaster is Auth {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Callback triggered whenever a Safe boosts a Vault.
-    /// @param safe The Turbo Safe that boosted the Vault.
     /// @param vault The Vault that was boosted.
     /// @param feiAmount The amount of Fei used to boost the Vault.
-    function onSafeBoost(
-        TurboSafe safe,
-        CERC20 vault,
-        uint256 feiAmount
-    ) external {
-        require(isSafe[safe], "INVALID_SAFE");
+    function onSafeBoost(CERC20 vault, uint256 feiAmount) external {
+        require(isSafe[msg.sender], "INVALID_SAFE");
 
-        getTotalBoostedForVault[vault] += amount;
+        getTotalBoostedForVault[vault] += feiAmount;
+
+        totalBoosted += feiAmount;
     }
 
     /// @notice Callback triggered whenever a Safe withdraws from a Vault.
-    /// @param safe The Turbo Safe that withdrew from the Vault.
     /// @param vault The Vault that was withdrawn from.
     /// @param feiAmount The amount of Fei withdrawn from the Vault.
     function onSafeLess(
@@ -168,9 +166,13 @@ contract TurboMaster is Auth {
         CERC20 vault,
         uint256 feiAmount
     ) external {
-        require(isSafe[safe], "INVALID_SAFE");
+        require(isSafe[msg.sender], "INVALID_SAFE");
 
-        getTotalBoostedForVault[vault] -= amount;
+        getTotalBoostedForVault[vault] -= feiAmount;
+
+        totalBoosted -= feiAmount;
+
+        // TODO: check with custodians
     }
 
     /*///////////////////////////////////////////////////////////////

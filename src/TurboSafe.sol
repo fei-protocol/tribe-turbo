@@ -56,7 +56,7 @@ contract TurboSafe is Auth, ERC20 {
                              FUSE STORAGE
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice The Fuse Pool contract that collateral is held in and Fei is borrowed from.
+    /// @notice The Turbo Fuse Pool contract that collateral is held in and Fei is borrowed from.
     Comptroller public immutable pool;
 
     /// @notice The Fei cToken in the Turbo Fuse Pool that is borrowed from
@@ -99,6 +99,8 @@ contract TurboSafe is Auth, ERC20 {
     /*///////////////////////////////////////////////////////////////
                              VAULT LOGIC
     //////////////////////////////////////////////////////////////*/
+
+    // TODO: store total boost amount
 
     /// @notice Emitted after a successful deposit.
     /// @param from The address that deposited into the Vault.
@@ -202,7 +204,7 @@ contract TurboSafe is Auth, ERC20 {
         require(cToken.underlying() == fei, "NOT_FEI");
 
         // Check that the custodian consents to a boost to the cToken of this amount from this safe.
-        require(master.custodian().isAuthorizedToBoost(this, cToken, feiAmount), "CUSTODIAN_REJECTED");
+        require(master.booster().isAuthorizedToBoost(this, cToken, feiAmount), "CUSTODIAN_REJECTED");
 
         slurp(cToken); // Accrue any fees earned by the cToken to the Master.
 
@@ -257,6 +259,8 @@ contract TurboSafe is Auth, ERC20 {
         // Compute the amount of Fei fees the Safe generated in the cToken.
         uint256 feesEarned = cToken.balanceOfUnderlying(address(this)) - getTotalFeiDeposited[cToken];
 
+        // TODO: increment getTotalFeiDeposited
+
         // If we have any fees not yet accrued, redeem them as Fei from the cToken.
         if (feesEarned != 0) require(cToken.redeemUnderlying(feesEarned) == 0, "REDEEM_FAILED");
 
@@ -275,8 +279,8 @@ contract TurboSafe is Auth, ERC20 {
     /// @dev Requires special authorization from the Custodian.
     /// @dev Debt must be repaid in advance, or the redemption will fail.
     function gib(uint256 underlyingAmount) external {
-        // Check that Custodian consents to the caller impounding this amount of collateral.
-        require(master.custodian().isAuthorizedToImpound(msg.sender, this, underlyingAmount), "CUSTODIAN_REJECTED");
+        // Check that Impounder consents to the caller impounding this amount of collateral.
+        require(master.impounder().isAuthorizedToImpound(msg.sender, this, underlyingAmount), "IMPOUNDER_REJECTED");
 
         // Update the total holdings of the Safe proportionately.
         totalHoldings -= underlyingAmount;
