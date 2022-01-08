@@ -6,8 +6,8 @@ import {Auth, Authority} from "solmate/auth/Auth.sol";
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
 
-import {CERC20} from "./external/CERC20.sol";
-import {Comptroller} from "./external/Comptroller.sol";
+import {CERC20} from "./interfaces/CERC20.sol";
+import {Comptroller} from "./interfaces/Comptroller.sol";
 
 import {TurboMaster} from "./TurboMaster.sol";
 
@@ -217,6 +217,9 @@ contract TurboSafe is Auth, ERC20 {
 
         // Mint the Fei into the specified cToken.
         require(cToken.mint(feiAmount) == 0, "MINT_FAILED");
+
+        // Call the Master to allow it to update its accounting.
+        master.onSafeBoost(this, cToken, feiAmount);
     }
 
     /// @notice Withdraw Fei from a deposited cToken and use it to repay debt in the Turbo Fuse Pool.
@@ -243,6 +246,9 @@ contract TurboSafe is Auth, ERC20 {
 
         // Repay the specified amount of Fei in the Turbo Fuse Pool.
         require(feiCToken.repayBorrow(feiAmount) == 0, "REPAY_FAILED");
+
+        // Call the Master to allow it to update its accounting.
+        master.onSafeLess(this, cToken, feiAmount);
     }
 
     /// @notice Accrue any fees earned by the Safe in the cToken to the Master.
@@ -253,6 +259,8 @@ contract TurboSafe is Auth, ERC20 {
 
         // If we have any fees not yet accrued, redeem them as Fei from the cToken.
         if (feesEarned != 0) require(cToken.redeemUnderlying(feesEarned) == 0, "REDEEM_FAILED");
+
+        // TODO: Call the accountant and get the fees the safe will keep.
 
         // Transfer the redeemed Fei to the Master.
         underlying.safeTransfer(address(master), feesEarned);

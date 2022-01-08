@@ -1,83 +1,54 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.10;
 
+import {Auth, Authority} from "solmate/auth/Auth.sol";
+
+import {CERC20} from "../interfaces/CERC20.sol";
+
 import {TurboSafe} from "../TurboSafe.sol";
+import {TurboMaster} from "../TurboMaster.sol";
 
 /// @title Turbo Booster
 /// @author Transmissions11
-/// @notice Fee determination module for Turbo Safes.
-contract TurboAccountant is Auth {
+/// @notice Boost authorization module.
+contract TurboBooster is Auth {
+    /*///////////////////////////////////////////////////////////////
+                             MASTER STORAGE
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice The Master contract used by the Booster.
+    TurboMaster public immutable master;
+
     /*///////////////////////////////////////////////////////////////
                               CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Creates a new Turbo Accountant contract.
-    /// @param _owner The owner of the Accountant.
-    /// @param _authority The Authority of the Accountant.
-    constructor(address _owner, Authority _authority) Auth(_owner, _authority) {}
-
-    /*///////////////////////////////////////////////////////////////
-                        DEFAULT FEE CONFIGURATION
-    //////////////////////////////////////////////////////////////*/
-
-    /// @notice The default fee on Safe interest taken by the protocol.
-    /// @dev A fixed point number where 1e18 represents 100% and 0 represents 0%.
-    uint256 public defaultFeePercentage;
-
-    /// @notice Emitted when the default fee percentage is updated.
-    /// @param newDefaultFeePercentage The new default fee percentage.
-    event DefaultFeePercentageUpdated(uint256 newDefaultFeePercentage);
-
-    /// @notice Sets the default fee percentage.
-    /// @param newDefaultFeePercentage The new default fee percentage.
-    function setDefaultFeePercentage(uint256 newDefaultFeePercentage) external {
-        // A fee percentage over 100% makes no sense.
-        require(newFeePercentage <= 1e18, "FEE_TOO_HIGH");
-
-        // Update the default fee percentage.
-        defaultFeePercentage = newDefaultFeePercentage;
-
-        emit DefaultFeePercentageUpdated(newDefaultFeePercentage);
+    /// @notice Creates a new Turbo Booster contract.
+    /// @param _master The Master used by the Booster.
+    /// @param _owner The owner of the Booster.
+    /// @param _authority The Authority of the Booster.
+    constructor(
+        TurboMaster _master,
+        address _owner,
+        Authority _authority
+    ) Auth(_owner, _authority) {
+        master = _master;
     }
 
     /*///////////////////////////////////////////////////////////////
-                        CUSTOM FEE CONFIGURATION
+                          AUTHORIZATOIN LOGIC
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Maps Safes to their custom fees on interest taken by the protocol.
-    /// @dev A fixed point number where 1e18 represents 100% and 0 represents 0%.
-    mapping(address => uint256) public getCustomFeePercentageForSafe;
-
-    /// @notice Emitted when a Safe's custom fee percentage is updated.
-    /// @param safe The Safe who's custom fee percentage was updated.
-    /// @param newFeePercentage The new custom fee percentage.
-    event CustomFeePercentageUpdated(TurboSafe safe, uint256 newFeePercentage);
-
-    /// @notice Sets a Safe's custom fee percentage.
-    /// @param safe The Safe to set the custom fee percentage for.
-    /// @param newFeePercentage The new custom fee percentage for the Safe.
-    function setCustomFeePercentageForSafe(TurboSafe safe, uint256 newFeePercentage) external requiresAuth {
-        // A fee percentage over 100% makes no sense.
-        require(newFeePercentage <= 1e18, "FEE_TOO_HIGH");
-
-        // Update the custom fee percentage for the Safe.
-        getCustomFeePercentageForSafe[safe] = newFeePercentage;
-
-        emit CustomFeePercentageUpdated(safe, newFeePercentage);
-    }
-
-    /*///////////////////////////////////////////////////////////////
-                          ACCOUNTING LOGIC
-    //////////////////////////////////////////////////////////////*/
-
-    /// @notice Returns the fee on interest taken by the protocol for a Safe.
-    /// @param safe The Safe to get the fee percentage for.
-    /// @return The fee percentage for the Safe.
-    function getFeePercentageForSafe(TurboSafe safe) external view returns (uint256) {
-        // If a custom fee percentage is set for the Safe, return it.
-        if (getCustomFeePercentageForSafe[safe] != 0) return getCustomFeePercentageForSafe[safe];
-
-        // Otherwise, return the default fee percentage.
-        return defaultFeePercentage;
+    /// @notice Returns whether a Safe is authorized to boost a Vault.
+    /// @param safe The Safe to check is authorized to boost the Vault.
+    /// @param vault The Vault to check the Safe is authorized to boost.
+    /// @param feiAmount The amount of Fei asset to check the Safe is authorized boost the Vault with.
+    /// @return Whether the Safe is authorized to boost the Vault with the given amount of Fei asset.
+    function canSafeBoostVault(
+        TurboSafe safe,
+        CERC20 vault,
+        uint256 feiAmount
+    ) external view returns (uint256) {
+        // TODO: Call the master, check caps, n such.
     }
 }
