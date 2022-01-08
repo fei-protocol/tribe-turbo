@@ -26,11 +26,15 @@ contract Gibber is Auth {
         TurboSafe safe,
         uint256 feiAmount,
         uint256 underlyingAmount
-    ) external {
+    ) external requiresAuth {
+        // TODO: mint
+
         // TODO: approve.
 
         safe.feiCToken().repayBorrowBehalf(address(safe), feiAmount);
 
         safe.gib(underlyingAmount);
+
+        // TODO: transfer the received the collateral to the sender
     }
 }

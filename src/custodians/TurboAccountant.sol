@@ -34,7 +34,7 @@ contract TurboAccountant is Auth {
     /// @param newDefaultFeePercentage The new default fee percentage.
     function setDefaultFeePercentage(uint256 newDefaultFeePercentage) external {
         // A fee percentage over 100% makes no sense.
-        require(newFeePercentage <= 1e18, "FEE_TOO_HIGH");
+        require(newDefaultFeePercentage <= 1e18, "FEE_TOO_HIGH");
 
         // Update the default fee percentage.
         defaultFeePercentage = newDefaultFeePercentage;
@@ -67,6 +67,8 @@ contract TurboAccountant is Auth {
 
         emit CustomFeePercentageUpdated(safe, newFeePercentage);
     }
+
+    // TODO: override per collateral and safe
 
     /*///////////////////////////////////////////////////////////////
                           ACCOUNTING LOGIC
