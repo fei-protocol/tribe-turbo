@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.10;
 
+import {Auth, Authority} from "solmate/auth/Auth.sol";
+
 import {TurboSafe} from "../TurboSafe.sol";
 
 /// @title Turbo Accountant
@@ -27,7 +29,6 @@ contract TurboAccountant is Auth {
     /// @notice Emitted when the default fee percentage is updated.
     /// @param newDefaultFeePercentage The new default fee percentage.
     event DefaultFeePercentageUpdated(uint256 newDefaultFeePercentage);
-
 
     /// @notice Sets the default fee percentage.
     /// @param newDefaultFeePercentage The new default fee percentage.

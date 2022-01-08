@@ -5,9 +5,11 @@ import {ERC20} from "solmate/tokens/ERC20.sol";
 import {Auth, Authority} from "solmate/auth/Auth.sol";
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 
-import {Comptroller} from "./external/Comptroller.sol";
+import {Comptroller} from "./interfaces/Comptroller.sol";
 
-import {TurboCustodian} from "./TurboCustodian.sol";
+import {TurboBooster} from "./custodians/TurboBooster.sol";
+import {TurboImpounder} from "./custodians/TurboImpounder.sol";
+import {TurboAccountant} from "./custodians/TurboAccountant.sol";
 
 import {TurboSafe} from "./TurboSafe.sol";
 
@@ -47,24 +49,74 @@ contract TurboMaster is Auth {
     }
 
     /*///////////////////////////////////////////////////////////////
-                           CUSTODIAN STORAGE
+                            BOOSTER STORAGE
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Emitted when the Custodian is updated.
-    /// @param user The user who triggered the update of the Custodian.
-    /// @param newCustodian The new Custodian contract used by the Master.
-    event CustodianUpdated(address indexed user, TurboCustodian newCustodian);
+    /// @notice The Booster custodian used by the Master and its Safes.
+    TurboBooster public booster;
 
-    /// @notice The Custodian contract used by the Master and its Safes.
-    TurboCustodian public custodian;
+    /// @notice Emitted when the Booster is updated.
+    /// @param user The user who triggered the update of the Booster.
+    /// @param newBooster The new Booster contract used by the Master.
+    event BoosterUpdated(address indexed user, TurboBooster newBooster);
 
-    /// @notice Update the Custodian used by the Master.
-    /// @param newCustodian The new Custodian contract to be used by the Master.
-    function setCustodian(TurboCustodian newCustodian) external requiresAuth {
-        custodian = newCustodian;
+    /// @notice Update the Booster used by the Master.
+    /// @param newBooster The new Booster contract to be used by the Master.
+    function setBooster(TurboBooster newBooster) external requiresAuth {
+        booster = newBooster;
 
-        emit CustodianUpdated(msg.sender, custodian);
+        emit BoosterUpdated(msg.sender, newBooster);
     }
+
+    /*///////////////////////////////////////////////////////////////
+                            ACCOUNTANT STORAGE
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice The Accountant custodian used by the Master and its Safes.
+    TurboAccountant public accountant;
+
+    /// @notice Emitted when the Accountant is updated.
+    /// @param user The user who triggered the update of the Accountant.
+    /// @param newAccountant The new Accountant contract used by the Master.
+    event AccountantUpdated(address indexed user, TurboAccountant newAccountant);
+
+    /// @notice Update the Accountant used by the Master.
+    /// @param newAccountant The new Accountant contract to be used by the Master.
+    function setAccountant(TurboAccountant newAccountant) external requiresAuth {
+        accountant = newAccountant;
+
+        emit AccountantUpdated(msg.sender, newAccountant);
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                           IMPOUNDER STORAGE
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice The Impounder custodian used by the Master and its Safes.
+    TurboImpounder public impounder;
+
+    /// @notice Emitted when the Impounder is updated.
+    /// @param user The user who triggered the update of the Impounder.
+    /// @param newImpounder The new Impounder contract used by the Master.
+    event ImpounderUpdated(address indexed user, TurboImpounder newImpounder);
+
+    /// @notice Update the Impounder used by the Master.
+    /// @param newImpounder The new Impounder contract to be used by the Master.
+    function setImpounder(TurboImpounder newImpounder) external requiresAuth {
+        impounder = newImpounder;
+
+        emit ImpounderUpdated(msg.sender, newImpounder);
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                             SAFE STORAGE
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice Maps Safe addresses to a boolean confirming they exist.
+    mapping(TurboSafe => bool) public isSafe;
+
+    /// @notice Maps Vault addresses to the total amount of Fei they've been boosted.
+    mapping(CERC20 => uint256) public getTotalBoostedForVault;
 
     /*///////////////////////////////////////////////////////////////
                           SAFE CREATION LOGIC
@@ -82,9 +134,43 @@ contract TurboMaster is Auth {
     function createSafe(ERC20 underlying) external requiresAuth returns (TurboSafe safe) {
         safe = new TurboSafe(msg.sender, underlying);
 
-        // TODO: Authorize the safe to the Turbo Fuse Pool.
+        isSafe[safe] = true;
+
+        // TODO: Authorize the Safe to the Turbo Fuse Pool.
 
         emit TurboSafeCreated(msg.sender, underlying, safe);
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                          SAFE CALLBACK LOGIC
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice Callback triggered whenever a Safe boosts a Vault.
+    /// @param safe The Turbo Safe that boosted the Vault.
+    /// @param vault The Vault that was boosted.
+    /// @param feiAmount The amount of Fei used to boost the Vault.
+    function onSafeBoost(
+        TurboSafe safe,
+        CERC20 vault,
+        uint256 feiAmount
+    ) external {
+        require(isSafe[safe], "INVALID_SAFE");
+
+        getTotalBoostedForVault[vault] += amount;
+    }
+
+    /// @notice Callback triggered whenever a Safe withdraws from a Vault.
+    /// @param safe The Turbo Safe that withdrew from the Vault.
+    /// @param vault The Vault that was withdrawn from.
+    /// @param feiAmount The amount of Fei withdrawn from the Vault.
+    function onSafeLess(
+        TurboSafe safe,
+        CERC20 vault,
+        uint256 feiAmount
+    ) external {
+        require(isSafe[safe], "INVALID_SAFE");
+
+        getTotalBoostedForVault[vault] -= amount;
     }
 
     /*///////////////////////////////////////////////////////////////

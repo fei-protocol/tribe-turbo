@@ -41,4 +41,6 @@ interface CERC20 {
     /// @param user The user to get the borrow balance of.
     /// @return The user's cToken borrow balance in underlying tokens.
     function borrowBalanceCurrent(address user) external returns (uint256);
+
+    function repayBorrowBehalf(address, uint256) external returns (uint256);
 }
