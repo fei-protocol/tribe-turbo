@@ -47,6 +47,9 @@ contract TurboMaster is Auth {
     ) Auth(_owner, _authority) {
         pool = _pool;
         fei = _fei;
+
+        // Prevent safes from having an id of 0.
+        safes.push(TurboSafe(address(0)));
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -116,14 +119,14 @@ contract TurboMaster is Auth {
     /// @notice The total Fei currently boosting vaults.
     uint256 public totalBoosted;
 
-    /// @notice Maps Safe addresses to a boolean confirming they were creating by the Master.
-    mapping(TurboSafe => bool) public isSafe;
+    /// @notice Maps Safe addresses to the id they are stored under in the safes array.
+    mapping(TurboSafe => uint256) public getSafeId;
 
     /// @notice Maps vault addresses to the total amount of Fei they've being boosted with.
     mapping(ERC4626 => uint256) public getTotalBoostedForVault;
 
     /// @notice An array of all Safes created by the Master.
-    address[] public safes;
+    TurboSafe[] public safes;
 
     /// @notice Returns all Safes created by the Master.
     /// @return An array of all Safes created by the Master.
@@ -154,11 +157,11 @@ contract TurboMaster is Auth {
         // Add the safe to the list of Safes.
         safes.push(safe);
 
-        // Confirm the Safe was created by the Master.
-        isSafe[safe] = true;
-
         // Get the index/id of the new Safe.
         id = safes.length - 1;
+
+        // Store the id/index of the new Safe.
+        getSafeId[safe] = id;
 
         emit TurboSafeCreated(msg.sender, underlying, safe, id);
 
@@ -183,7 +186,7 @@ contract TurboMaster is Auth {
     /// @param feiAmount The amount of Fei used to boost the vault.
     function onSafeBoost(ERC4626 vault, uint256 feiAmount) external {
         // Ensure the Safe was created by this Master.
-        require(isSafe[TurboSafe(msg.sender)], "INVALID_SAFE");
+        require(getSafeId[TurboSafe(msg.sender)] != 0, "INVALID_SAFE");
 
         // Check with the booster that the Safe is allowed to boost the vault using this amount of Fei.
         require(booster.canSafeBoostVault(TurboSafe(msg.sender), vault, feiAmount), "BOOSTER_REJECTED");
@@ -200,7 +203,7 @@ contract TurboMaster is Auth {
     /// @param feiAmount The amount of Fei withdrawn from the vault.
     function onSafeLess(ERC4626 vault, uint256 feiAmount) external {
         // Ensure the Safe was created by this Master.
-        require(isSafe[TurboSafe(msg.sender)], "INVALID_SAFE");
+        require(getSafeId[TurboSafe(msg.sender)] != 0, "INVALID_SAFE");
 
         // Update the total amount of Fei being using to boost the vault.
         getTotalBoostedForVault[vault] -= feiAmount;
