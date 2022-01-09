@@ -192,7 +192,7 @@ contract TurboSafe is Auth, ERC20, ERC4626 {
             vault.withdraw(address(this), protocolFeeAmount);
 
             // Transfer the fees owed as Fei to the Master.
-            underlying.safeTransfer(address(master), protocolFeeAmount);
+            fei.safeTransfer(address(master), protocolFeeAmount);
         }
     }
 
