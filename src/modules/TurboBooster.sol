@@ -38,6 +38,54 @@ contract TurboBooster is Auth {
     // TODO: debt caps for vaults
 
     /*///////////////////////////////////////////////////////////////
+                        DEBT CAP CONFIGURATION
+    //////////////////////////////////////////////////////////////*/
+
+    // /// @notice Maps Safes to their custom fees on interest taken by the protocol.
+    // /// @dev A fixed point number where 1e18 represents 100% and 0 represents 0%.
+    // mapping(ERC20 => uint256) public getCustomFeePercentageForCollateral;
+
+    // /// @notice Maps Safes to their custom fees on interest taken by the protocol.
+    // /// @dev A fixed point number where 1e18 represents 100% and 0 represents 0%.
+    // mapping(TurboSafe => uint256) public getCustomFeePercentageForSafe;
+
+    // /// @notice Emitted when a collateral's custom fee percentage is updated.
+    // /// @param collateral The collateral who's custom fee percentage was updated.
+    // /// @param newFeePercentage The new custom fee percentage.
+    // event CustomFeePercentageUpdatedForCollateral(ERC20 collateral, uint256 newFeePercentage);
+
+    // /// @notice Sets a collateral's custom fee percentage.
+    // /// @param collateral The collateral to set the custom fee percentage for.
+    // /// @param newFeePercentage The new custom fee percentage for the collateral.
+    // function setCustomFeePercentageForCollateral(ERC20 collateral, uint256 newFeePercentage) external requiresAuth {
+    //     // A fee percentage over 100% makes no sense.
+    //     require(newFeePercentage <= 1e18, "FEE_TOO_HIGH");
+
+    //     // Update the custom fee percentage for the Safe.
+    //     getCustomFeePercentageForCollateral[collateral] = newFeePercentage;
+
+    //     emit CustomFeePercentageUpdatedForCollateral(collateral, newFeePercentage);
+    // }
+
+    // /// @notice Emitted when a Safe's custom fee percentage is updated.
+    // /// @param safe The Safe who's custom fee percentage was updated.
+    // /// @param newFeePercentage The new custom fee percentage.
+    // event CustomFeePercentageUpdatedForSafe(TurboSafe safe, uint256 newFeePercentage);
+
+    // /// @notice Sets a Safe's custom fee percentage.
+    // /// @param safe The Safe to set the custom fee percentage for.
+    // /// @param newFeePercentage The new custom fee percentage for the Safe.
+    // function setCustomFeePercentageForSafe(TurboSafe safe, uint256 newFeePercentage) external requiresAuth {
+    //     // A fee percentage over 100% makes no sense.
+    //     require(newFeePercentage <= 1e18, "FEE_TOO_HIGH");
+
+    //     // Update the custom fee percentage for the Safe.
+    //     getCustomFeePercentageForSafe[safe] = newFeePercentage;
+
+    //     emit CustomFeePercentageUpdatedForSafe(safe, newFeePercentage);
+    // }
+
+    /*///////////////////////////////////////////////////////////////
                           AUTHORIZATOIN LOGIC
     //////////////////////////////////////////////////////////////*/
 
