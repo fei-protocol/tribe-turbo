@@ -136,19 +136,24 @@ contract TurboMaster is Auth {
     /// @param underlying The ERC20 token that the Safe should accept.
     /// @return safe The newly deployed Turbo Safe which accepts the provided underlying token.
     function createSafe(ERC20 underlying) external requiresAuth returns (TurboSafe safe) {
+        // Create a new Safe using the provided underlying token.
         safe = new TurboSafe(msg.sender, underlying);
 
+        // Confirm the Safe was created by the Master.
         isSafe[safe] = true;
 
-        address[] memory users = new address[](1);
-        bool[] memory enabled = new bool[](1);
+        emit TurboSafeCreated(msg.sender, underlying, safe);
 
+        // Prepare a users array to whitelist the Safe.
+        address[] memory users = new address[](1);
         users[0] = msg.sender;
+
+        // Prepare an enabled array to whitelist the Safe.
+        bool[] memory enabled = new bool[](1);
         enabled[0] = true;
 
-        pool._setWhitelistStatuses(users, enabled);
-
-        emit TurboSafeCreated(msg.sender, underlying, safe);
+        // Whitelist the Safe to access the Turbo Fuse Pool, revert if an error is returned.
+        require(pool._setWhitelistStatuses(users, enabled) == 0, "WHITELIST_ERROR");
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -159,12 +164,16 @@ contract TurboMaster is Auth {
     /// @param vault The vault that was boosted.
     /// @param feiAmount The amount of Fei used to boost the vault.
     function onSafeBoost(ERC4626 vault, uint256 feiAmount) external {
+        // Ensure the Safe was created by this Master.
         require(isSafe[TurboSafe(msg.sender)], "INVALID_SAFE");
 
+        // Check with the booster that the Safe is allowed to boost the vault using this amount of Fei.
         require(booster.canSafeBoostVault(TurboSafe(msg.sender), vault, feiAmount), "BOOSTER_REJECTED");
 
+        // Update the total amount of Fei being using to boost the vault.
         getTotalBoostedForVault[vault] += feiAmount;
 
+        // Update the total amount of Fei being using to boost vaults.
         totalBoosted += feiAmount;
     }
 
@@ -172,28 +181,29 @@ contract TurboMaster is Auth {
     /// @param vault The vault that was withdrawn from.
     /// @param feiAmount The amount of Fei withdrawn from the vault.
     function onSafeLess(ERC4626 vault, uint256 feiAmount) external {
+        // Ensure the Safe was created by this Master.
         require(isSafe[TurboSafe(msg.sender)], "INVALID_SAFE");
 
-        getTotalBoostedForVault[vault] -= feiAmount;
+        // Update the total amount of Fei being using to boost the vault.
+        getTotalBoostedForVault[vault] += feiAmount;
 
-        totalBoosted -= feiAmount;
-
-        // TODO: check with custodians
+        // Update the total amount of Fei being using to boost vaults.
+        totalBoosted += feiAmount;
     }
 
     /*///////////////////////////////////////////////////////////////
                          FEE RECLAMATION LOGIC
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Emitted when fees are reclaimed by an authorized user.
-    /// @param user The authorized user who reclaimed the fees.
-    /// @param feiAmount The amount of Fei fees that were reclaimed.
-    event FeesReclaimed(address indexed user, uint256 feiAmount);
+    /// @notice Emitted when fees are claimed by an authorized user.
+    /// @param user The authorized user who claimed the fees.
+    /// @param feiAmount The amount of Fei fees that were claimed.
+    event FeesClaimed(address indexed user, uint256 feiAmount);
 
-    /// @notice Reclaims the fees generated as Fei sent to the Master.
-    /// @param feiAmount The amount of Fei fees that should be reclaimed.
-    function reclaimFees(uint256 feiAmount) external requiresAuth {
-        emit FeesReclaimed(msg.sender, feiAmount);
+    /// @notice Claims the fees generated as Fei sent to the Master.
+    /// @param feiAmount The amount of Fei fees that should be claimed.
+    function claimFees(uint256 feiAmount) external requiresAuth {
+        emit FeesClaimed(msg.sender, feiAmount);
 
         // Transfer the Fei fees to the authorized caller.
         fei.safeTransfer(msg.sender, feiAmount);
