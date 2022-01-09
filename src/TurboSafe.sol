@@ -31,9 +31,12 @@ contract TurboSafe is Auth, ERC20, ERC4626 {
                                SAFE STORAGE
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Maps vaults to the amount of Fei deposited to them.
+    /// @notice The current total amount of Fei the Safe is using to boost vaults.
+    uint256 totalFeiBoosted;
+
+    /// @notice Maps vaults to the total amount of Fei they've being boosted with.
     /// @dev Used to determine the fees to be paid back to the Master.
-    mapping(ERC4626 => uint256) getTotalFeiDeposited;
+    mapping(ERC4626 => uint256) getTotalFeiBoosted;
 
     /// @notice The Fei token on the network.
     ERC20 public immutable fei;
@@ -96,7 +99,7 @@ contract TurboSafe is Auth, ERC20, ERC4626 {
     }
 
     /*///////////////////////////////////////////////////////////////
-                             BOOST LOGIC
+                             SAFE LOGIC
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Borrow Fei from the Turbo Fuse Pool and deposit it into an authorized vault.
@@ -110,7 +113,10 @@ contract TurboSafe is Auth, ERC20, ERC4626 {
         slurp(vault); // Accrue any fees earned by the vault to the Master.
 
         // Update the total Fei deposited into the vault proportionately.
-        getTotalFeiDeposited[vault] += feiAmount;
+        getTotalFeiBoosted[vault] += feiAmount;
+
+        // Increase the boost total proportionately.
+        totalFeiBoosted += feiAmount;
 
         // Borrow the Fei amount from the Fei cToken in the Turbo Fuse Pool.
         require(feiCToken.borrow(feiAmount) == 0, "BORROW_FAILED");
@@ -134,7 +140,10 @@ contract TurboSafe is Auth, ERC20, ERC4626 {
         slurp(vault); // Accrue any fees earned by the vault to the Master.
 
         // Update the total Fei deposited into the vault proportionately.
-        getTotalFeiDeposited[vault] -= feiAmount;
+        getTotalFeiBoosted[vault] -= feiAmount;
+
+        // Decrease the boost total proportionately.
+        totalFeiBoosted -= feiAmount;
 
         // Withdraw the specified amount of Fei from the vault.
         vault.withdraw(address(this), feiAmount);
@@ -145,7 +154,8 @@ contract TurboSafe is Auth, ERC20, ERC4626 {
         // Get out current amount of Fei debt in the Turbo Fuse Pool.
         uint256 feiDebt = feiCToken.borrowBalanceCurrent(address(this));
 
-        // If someone repaid on our behalf, repay the minimum.
+        // If our debt balance decreased, repay the minimum.
+        // The surplus Fei will accrue as fees and can be sipped.
         if (feiAmount > feiDebt) feiAmount = feiDebt;
 
         // Repay the specified amount of Fei in the Turbo Fuse Pool.
@@ -159,9 +169,10 @@ contract TurboSafe is Auth, ERC20, ERC4626 {
     /// @param vault The vault to accrue fees from and send to the Master.
     function slurp(ERC4626 vault) public {
         // Compute the amount of Fei fees the Safe generated in the vault.
-        uint256 feesEarned = vault.balanceOfUnderlying(address(this)) - getTotalFeiDeposited[vault];
+        uint256 feesEarned = vault.balanceOfUnderlying(address(this)) - getTotalFeiBoosted[vault];
 
-        // TODO: increment getTotalFeiDeposited
+        // TODO: increment getTotalFeiBoosted
+        // totalFeiBoosted += feiAmount;
 
         // If we have any fees not yet accrued, redeem them as Fei from the vault.
         if (feesEarned != 0) vault.withdraw(address(this), feesEarned);
@@ -172,9 +183,11 @@ contract TurboSafe is Auth, ERC20, ERC4626 {
         underlying.safeTransfer(address(master), feesEarned);
     }
 
-    /*///////////////////////////////////////////////////////////////
-                          EMERGENCY LOGIC
-    //////////////////////////////////////////////////////////////*/
+    /// @notice Claim Fei accrued as fees to the Safe.
+    /// @param feiAmount The amount of Fei to claim.
+    function sip(uint256 feiAmount) external requiresAuth {
+        fei.safeTransfer(msg.sender, feiAmount);
+    }
 
     /// @notice Impound a specific amount of a Safe's collateral.
     /// @param underlyingAmount The amount of the underlying to impound.
