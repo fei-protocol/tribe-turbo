@@ -29,7 +29,7 @@ contract TurboAccountant is Auth {
 
     /// @notice Emitted when the default fee percentage is updated.
     /// @param newDefaultFeePercentage The new default fee percentage.
-    event DefaultFeePercentageUpdated(uint256 newDefaultFeePercentage);
+    event DefaultFeePercentageUpdated(address indexed user, uint256 newDefaultFeePercentage);
 
     /// @notice Sets the default fee percentage.
     /// @param newDefaultFeePercentage The new default fee percentage.
@@ -40,14 +40,14 @@ contract TurboAccountant is Auth {
         // Update the default fee percentage.
         defaultFeePercentage = newDefaultFeePercentage;
 
-        emit DefaultFeePercentageUpdated(newDefaultFeePercentage);
+        emit DefaultFeePercentageUpdated(msg.sender, newDefaultFeePercentage);
     }
 
     /*///////////////////////////////////////////////////////////////
                         CUSTOM FEE CONFIGURATION
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Maps Safes to their custom fees on interest taken by the protocol.
+    /// @notice Maps collaterals to their custom fees on interest taken by the protocol.
     /// @dev A fixed point number where 1e18 represents 100% and 0 represents 0%.
     mapping(ERC20 => uint256) public getCustomFeePercentageForCollateral;
 
@@ -58,7 +58,11 @@ contract TurboAccountant is Auth {
     /// @notice Emitted when a collateral's custom fee percentage is updated.
     /// @param collateral The collateral who's custom fee percentage was updated.
     /// @param newFeePercentage The new custom fee percentage.
-    event CustomFeePercentageUpdatedForCollateral(ERC20 collateral, uint256 newFeePercentage);
+    event CustomFeePercentageUpdatedForCollateral(
+        address indexed user,
+        ERC20 indexed collateral,
+        uint256 newFeePercentage
+    );
 
     /// @notice Sets a collateral's custom fee percentage.
     /// @param collateral The collateral to set the custom fee percentage for.
@@ -70,13 +74,13 @@ contract TurboAccountant is Auth {
         // Update the custom fee percentage for the Safe.
         getCustomFeePercentageForCollateral[collateral] = newFeePercentage;
 
-        emit CustomFeePercentageUpdatedForCollateral(collateral, newFeePercentage);
+        emit CustomFeePercentageUpdatedForCollateral(msg.sender, collateral, newFeePercentage);
     }
 
     /// @notice Emitted when a Safe's custom fee percentage is updated.
     /// @param safe The Safe who's custom fee percentage was updated.
     /// @param newFeePercentage The new custom fee percentage.
-    event CustomFeePercentageUpdatedForSafe(TurboSafe safe, uint256 newFeePercentage);
+    event CustomFeePercentageUpdatedForSafe(address indexed user, TurboSafe indexed safe, uint256 newFeePercentage);
 
     /// @notice Sets a Safe's custom fee percentage.
     /// @param safe The Safe to set the custom fee percentage for.
@@ -88,7 +92,7 @@ contract TurboAccountant is Auth {
         // Update the custom fee percentage for the Safe.
         getCustomFeePercentageForSafe[safe] = newFeePercentage;
 
-        emit CustomFeePercentageUpdatedForSafe(safe, newFeePercentage);
+        emit CustomFeePercentageUpdatedForSafe(msg.sender, safe, newFeePercentage);
     }
 
     /*///////////////////////////////////////////////////////////////

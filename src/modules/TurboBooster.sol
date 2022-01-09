@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.10;
 
+import {ERC20} from "solmate/tokens/ERC20.sol";
 import {Auth, Authority} from "solmate/auth/Auth.sol";
 
 import {ERC4626} from "../interfaces/ERC4626.sol";
@@ -35,55 +36,92 @@ contract TurboBooster is Auth {
         master = _master;
     }
 
-    // TODO: debt caps for vaults
-
     /*///////////////////////////////////////////////////////////////
-                        DEBT CAP CONFIGURATION
+                      GLOBAL FREEZE CONFIGURATION
     //////////////////////////////////////////////////////////////*/
 
-    // /// @notice Maps Safes to their custom fees on interest taken by the protocol.
-    // /// @dev A fixed point number where 1e18 represents 100% and 0 represents 0%.
-    // mapping(ERC20 => uint256) public getCustomFeePercentageForCollateral;
+    /// @notice Whether boosting is currently frozen.
+    bool public frozen;
 
-    // /// @notice Maps Safes to their custom fees on interest taken by the protocol.
-    // /// @dev A fixed point number where 1e18 represents 100% and 0 represents 0%.
-    // mapping(TurboSafe => uint256) public getCustomFeePercentageForSafe;
+    /// @notice Emitted when boosting is frozen or unfrozen.
+    /// @param user The user who froze or unfroze boosting.
+    /// @param frozen Whether boosting is now frozen.
+    event FreezeStatusUpdated(address indexed user, bool frozen);
 
-    // /// @notice Emitted when a collateral's custom fee percentage is updated.
-    // /// @param collateral The collateral who's custom fee percentage was updated.
-    // /// @param newFeePercentage The new custom fee percentage.
-    // event CustomFeePercentageUpdatedForCollateral(ERC20 collateral, uint256 newFeePercentage);
+    /// @notice Sets whether boosting is frozen.
+    /// @param freeze Whether boosting will be frozen.
+    function setFreezeStatus(bool freeze) external requiresAuth {
+        // Update freeze status.
+        frozen = freeze;
 
-    // /// @notice Sets a collateral's custom fee percentage.
-    // /// @param collateral The collateral to set the custom fee percentage for.
-    // /// @param newFeePercentage The new custom fee percentage for the collateral.
-    // function setCustomFeePercentageForCollateral(ERC20 collateral, uint256 newFeePercentage) external requiresAuth {
-    //     // A fee percentage over 100% makes no sense.
-    //     require(newFeePercentage <= 1e18, "FEE_TOO_HIGH");
+        emit FreezeStatusUpdated(msg.sender, frozen);
+    }
 
-    //     // Update the custom fee percentage for the Safe.
-    //     getCustomFeePercentageForCollateral[collateral] = newFeePercentage;
+    /*///////////////////////////////////////////////////////////////
+                     DEFAULT BOOST CAP CONFIGURATION
+    //////////////////////////////////////////////////////////////*/
 
-    //     emit CustomFeePercentageUpdatedForCollateral(collateral, newFeePercentage);
-    // }
+    /// @notice The default cap of Fei used to boost any vault.
+    uint256 public defaultBoostCap;
 
-    // /// @notice Emitted when a Safe's custom fee percentage is updated.
-    // /// @param safe The Safe who's custom fee percentage was updated.
-    // /// @param newFeePercentage The new custom fee percentage.
-    // event CustomFeePercentageUpdatedForSafe(TurboSafe safe, uint256 newFeePercentage);
+    /// @notice Emitted when the default boost cap is updated.
+    /// @param newDefaultBoostCap The new default boost cap.
+    event DefaultBoostCapUpdated(address indexed user, uint256 newDefaultBoostCap);
 
-    // /// @notice Sets a Safe's custom fee percentage.
-    // /// @param safe The Safe to set the custom fee percentage for.
-    // /// @param newFeePercentage The new custom fee percentage for the Safe.
-    // function setCustomFeePercentageForSafe(TurboSafe safe, uint256 newFeePercentage) external requiresAuth {
-    //     // A fee percentage over 100% makes no sense.
-    //     require(newFeePercentage <= 1e18, "FEE_TOO_HIGH");
+    /// @notice Sets the default boost cap.
+    /// @param newDefaultBoostCap The new default boost cap.
+    function setDefaultBoostCap(uint256 newDefaultBoostCap) external {
+        // Update the default boost cap.
+        defaultBoostCap = newDefaultBoostCap;
 
-    //     // Update the custom fee percentage for the Safe.
-    //     getCustomFeePercentageForSafe[safe] = newFeePercentage;
+        emit DefaultBoostCapUpdated(msg.sender, newDefaultBoostCap);
+    }
 
-    //     emit CustomFeePercentageUpdatedForSafe(safe, newFeePercentage);
-    // }
+    /*///////////////////////////////////////////////////////////////
+                     CUSTOM BOOST CAP CONFIGURATION
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice Maps collaterals to the cap on the amount of Fei used to boost them.
+    mapping(ERC20 => uint256) public getCustomBoostCapForCollateral;
+
+    /// @notice Maps Safes to the cap on the amount of Fei used to boost them.
+    mapping(TurboSafe => uint256) public getCustomBoostCapForSafe;
+
+    /// @notice Emitted when a collateral's custom boost cap is updated.
+    /// @param collateral The collateral who's custom boost cap was updated.
+    /// @param newBoostCap The new custom boost cap.
+    event CustomBoostCapUpdatedForCollateral(address indexed user, ERC20 indexed collateral, uint256 newBoostCap);
+
+    /// @notice Sets a collateral's custom fee percentage.
+    /// @param collateral The collateral to set the custom fee percentage for.
+    /// @param newFeePercentage The new custom fee percentage for the collateral.
+    function setCustomFeePercentageForCollateral(ERC20 collateral, uint256 newFeePercentage) external requiresAuth {
+        // A fee percentage over 100% makes no sense.
+        require(newFeePercentage <= 1e18, "FEE_TOO_HIGH");
+
+        // Update the custom fee percentage for the Safe.
+        getCustomFeePercentageForCollateral[collateral] = newFeePercentage;
+
+        emit CustomFeePercentageUpdatedForCollateral(msg.sender, collateral, newFeePercentage);
+    }
+
+    /// @notice Emitted when a Safe's custom boost cap is updated.
+    /// @param safe The Safe who's custom boost cap was updated.
+    /// @param newBoostCap The new custom boost cap.
+    event CustomBoostCapUpdatedForCollateral(address indexed user, TurboSafe indexed safe, uint256 newBoostCap);
+
+    /// @notice Sets a Safe's custom fee percentage.
+    /// @param safe The Safe to set the custom fee percentage for.
+    /// @param newFeePercentage The new custom fee percentage for the Safe.
+    function setCustomFeePercentageForSafe(TurboSafe safe, uint256 newFeePercentage) external requiresAuth {
+        // A fee percentage over 100% makes no sense.
+        require(newFeePercentage <= 1e18, "FEE_TOO_HIGH");
+
+        // Update the custom fee percentage for the Safe.
+        getCustomFeePercentageForSafe[safe] = newFeePercentage;
+
+        emit CustomFeePercentageUpdatedForSafe(msg.sender, safe, newFeePercentage);
+    }
 
     /*///////////////////////////////////////////////////////////////
                           AUTHORIZATOIN LOGIC
