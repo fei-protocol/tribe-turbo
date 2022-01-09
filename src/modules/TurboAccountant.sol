@@ -48,7 +48,7 @@ contract TurboAccountant is Auth {
 
     /// @notice Maps Safes to their custom fees on interest taken by the protocol.
     /// @dev A fixed point number where 1e18 represents 100% and 0 represents 0%.
-    mapping(address => uint256) public getCustomFeePercentageForSafe;
+    mapping(TurboSafe => uint256) public getCustomFeePercentageForSafe;
 
     /// @notice Emitted when a Safe's custom fee percentage is updated.
     /// @param safe The Safe who's custom fee percentage was updated.

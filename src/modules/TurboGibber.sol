@@ -8,7 +8,7 @@ import {TurboSafe} from "../TurboSafe.sol";
 /// @title Turbo Gibber
 /// @author Transmissions11
 /// @notice Atomic impounder module.
-contract Gibber is Auth {
+contract TurboGibber is Auth {
     /*///////////////////////////////////////////////////////////////
                               CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
