@@ -48,7 +48,7 @@ contract TurboMaster is Auth {
         pool = _pool;
         fei = _fei;
 
-        // Prevent safes from having an id of 0.
+        // Prevent the first safe from getting id 0.
         safes.push(TurboSafe(address(0)));
     }
 
