@@ -146,7 +146,7 @@ contract TurboMaster is Auth {
 
         // Prepare a users array to whitelist the Safe.
         address[] memory users = new address[](1);
-        users[0] = msg.sender;
+        users[0] = address(safe);
 
         // Prepare an enabled array to whitelist the Safe.
         bool[] memory enabled = new bool[](1);
@@ -185,10 +185,10 @@ contract TurboMaster is Auth {
         require(isSafe[TurboSafe(msg.sender)], "INVALID_SAFE");
 
         // Update the total amount of Fei being using to boost the vault.
-        getTotalBoostedForVault[vault] += feiAmount;
+        getTotalBoostedForVault[vault] -= feiAmount;
 
         // Update the total amount of Fei being using to boost vaults.
-        totalBoosted += feiAmount;
+        totalBoosted -= feiAmount;
     }
 
     /*///////////////////////////////////////////////////////////////
