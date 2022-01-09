@@ -58,69 +58,25 @@ contract TurboBooster is Auth {
     }
 
     /*///////////////////////////////////////////////////////////////
-                     DEFAULT BOOST CAP CONFIGURATION
+                         BOOST CAP CONFIGURATION
     //////////////////////////////////////////////////////////////*/
-
-    /// @notice The default cap of Fei used to boost any vault.
-    uint256 public defaultBoostCap;
-
-    /// @notice Emitted when the default boost cap is updated.
-    /// @param newDefaultBoostCap The new default boost cap.
-    event DefaultBoostCapUpdated(address indexed user, uint256 newDefaultBoostCap);
-
-    /// @notice Sets the default boost cap.
-    /// @param newDefaultBoostCap The new default boost cap.
-    function setDefaultBoostCap(uint256 newDefaultBoostCap) external {
-        // Update the default boost cap.
-        defaultBoostCap = newDefaultBoostCap;
-
-        emit DefaultBoostCapUpdated(msg.sender, newDefaultBoostCap);
-    }
-
-    /*///////////////////////////////////////////////////////////////
-                     CUSTOM BOOST CAP CONFIGURATION
-    //////////////////////////////////////////////////////////////*/
-
-    /// @notice Maps collaterals to the cap on the amount of Fei used to boost them.
-    mapping(ERC20 => uint256) public getCustomBoostCapForCollateral;
 
     /// @notice Maps Safes to the cap on the amount of Fei used to boost them.
-    mapping(TurboSafe => uint256) public getCustomBoostCapForSafe;
+    mapping(TurboSafe => uint256) public getBoostCapForSafe;
 
-    /// @notice Emitted when a collateral's custom boost cap is updated.
-    /// @param collateral The collateral who's custom boost cap was updated.
-    /// @param newBoostCap The new custom boost cap.
-    event CustomBoostCapUpdatedForCollateral(address indexed user, ERC20 indexed collateral, uint256 newBoostCap);
+    /// @notice Emitted when a Safe's boost cap is updated.
+    /// @param safe The Safe who's boost cap was updated.
+    /// @param newBoostCap The new boost cap for the Safe.
+    event BoostCapUpdatedForSafe(address indexed user, TurboSafe indexed safe, uint256 newBoostCap);
 
-    /// @notice Sets a collateral's custom fee percentage.
-    /// @param collateral The collateral to set the custom fee percentage for.
-    /// @param newFeePercentage The new custom fee percentage for the collateral.
-    function setCustomFeePercentageForCollateral(ERC20 collateral, uint256 newFeePercentage) external requiresAuth {
-        // A fee percentage over 100% makes no sense.
-        require(newFeePercentage <= 1e18, "FEE_TOO_HIGH");
+    /// @notice Sets a Safe's boost cap.
+    /// @param safe The Safe to set the boost cap for.
+    /// @param newBoostCap The new boost cap for the Safe.
+    function setBoostCapForSafe(TurboSafe safe, uint256 newBoostCap) external requiresAuth {
+        // Update the boost cap for the Safe.
+        getBoostCapForSafe[safe] = newBoostCap;
 
-        // Update the custom fee percentage for the Safe.
-        getCustomFeePercentageForCollateral[collateral] = newFeePercentage;
-
-        emit CustomFeePercentageUpdatedForCollateral(msg.sender, collateral, newFeePercentage);
-    }
-
-    /// @notice Emitted when a Safe's custom boost cap is updated.
-    /// @param safe The Safe who's custom boost cap was updated.
-    /// @param newBoostCap The new custom boost cap.
-    event CustomBoostCapUpdatedForCollateral(address indexed user, TurboSafe indexed safe, uint256 newBoostCap);
-
-    /// @notice Sets a Safe's custom fee percentage.
-    /// @param safe The Safe to set the custom fee percentage for.
-    /// @param newFeePercentage The new custom fee percentage for the Safe.
-    function setCustomFeePercentageForSafe(TurboSafe safe, uint256 newFeePercentage) external requiresAuth {
-        // A fee percentage over 100% makes no sense.
-        require(newFeePercentage <= 1e18, "FEE_TOO_HIGH");
-
-        // Update the custom fee percentage for the Safe.
-        getCustomFeePercentageForSafe[safe] = newFeePercentage;
-
-        emit CustomFeePercentageUpdatedForSafe(msg.sender, safe, newFeePercentage);
+        emit BoostCapUpdatedForSafe(msg.sender, safe, newBoostCap);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -137,6 +93,10 @@ contract TurboBooster is Auth {
         ERC4626 vault,
         uint256 feiAmount
     ) external view returns (bool) {
-        // TODO: Call the master, check caps, n such.
+        // Ensure new boosts aren't frozen.
+        require(!frozen, "FROZEN");
+
+        // Ensure the boost would not result in the total boost amount exceeding the vault's cap.
+        require(getBoostCapForSafe[safe] > (feiAmount + master.getTotalBoostedForVault(vault)), "EXCEEDS_CAP");
     }
 }
