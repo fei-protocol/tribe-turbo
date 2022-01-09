@@ -122,6 +122,17 @@ contract TurboMaster is Auth {
     /// @notice Maps vault addresses to the total amount of Fei they've being boosted with.
     mapping(ERC4626 => uint256) public getTotalBoostedForVault;
 
+    /// @notice An array of all Safes created by the Master.
+    address[] public safes;
+
+    /// @notice Returns all Safes created by the Master.
+    /// @return An array of all Safes created by the Master.
+    /// @dev This is provided because Solidity converts public arrays into index getters,
+    /// but we need a way to allow external contracts and users to access the whole array.
+    function getAllSafes() external view returns (address[] memory) {
+        return safes;
+    }
+
     /*///////////////////////////////////////////////////////////////
                           SAFE CREATION LOGIC
     //////////////////////////////////////////////////////////////*/
@@ -130,19 +141,26 @@ contract TurboMaster is Auth {
     /// @param user The user who created the Safe.
     /// @param underlying The underlying token of the Safe.
     /// @param safe The newly deployed Safe contract.
-    event TurboSafeCreated(address indexed user, ERC20 indexed underlying, TurboSafe safe);
+    /// @param id The index of the Safe in the safes array.
+    event TurboSafeCreated(address indexed user, ERC20 indexed underlying, TurboSafe safe, uint256 id);
 
     /// @notice Creates a new Turbo Safe which supports a specific underlying token.
     /// @param underlying The ERC20 token that the Safe should accept.
     /// @return safe The newly deployed Turbo Safe which accepts the provided underlying token.
-    function createSafe(ERC20 underlying) external requiresAuth returns (TurboSafe safe) {
+    function createSafe(ERC20 underlying) external requiresAuth returns (TurboSafe safe, uint256 id) {
         // Create a new Safe using the provided underlying token.
         safe = new TurboSafe(msg.sender, underlying);
+
+        // Add the safe to the list of Safes.
+        safes.push(safe);
 
         // Confirm the Safe was created by the Master.
         isSafe[safe] = true;
 
-        emit TurboSafeCreated(msg.sender, underlying, safe);
+        // Get the index/id of the new Safe.
+        id = safes.length - 1;
+
+        emit TurboSafeCreated(msg.sender, underlying, safe, id);
 
         // Prepare a users array to whitelist the Safe.
         address[] memory users = new address[](1);
