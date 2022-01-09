@@ -5,11 +5,12 @@ import {ERC20} from "solmate/tokens/ERC20.sol";
 import {Auth, Authority} from "solmate/auth/Auth.sol";
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 
+import {ERC4626} from "./interfaces/ERC4626.sol";
 import {Comptroller} from "./interfaces/Comptroller.sol";
 
-import {TurboBooster} from "./custodians/TurboBooster.sol";
-import {TurboImpounder} from "./custodians/TurboImpounder.sol";
-import {TurboAccountant} from "./custodians/TurboAccountant.sol";
+import {TurboGibber} from "./modules/TurboGibber.sol";
+import {TurboBooster} from "./modules/TurboBooster.sol";
+import {TurboAccountant} from "./modules/TurboAccountant.sol";
 
 import {TurboSafe} from "./TurboSafe.sol";
 
@@ -17,8 +18,6 @@ import {TurboSafe} from "./TurboSafe.sol";
 /// @author Transmissions11
 /// @notice Factory for creating and managing Turbo Safes.
 contract TurboMaster is Auth {
-    // TODO: remove impounder, store gibber
-
     using SafeTransferLib for ERC20;
 
     /*///////////////////////////////////////////////////////////////
@@ -54,7 +53,7 @@ contract TurboMaster is Auth {
                             BOOSTER STORAGE
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice The Booster custodian used by the Master and its Safes.
+    /// @notice The Booster module used by the Master and its Safes.
     TurboBooster public booster;
 
     /// @notice Emitted when the Booster is updated.
@@ -74,7 +73,7 @@ contract TurboMaster is Auth {
                             ACCOUNTANT STORAGE
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice The Accountant custodian used by the Master and its Safes.
+    /// @notice The Accountant module used by the Master and its Safes.
     TurboAccountant public accountant;
 
     /// @notice Emitted when the Accountant is updated.
@@ -91,36 +90,37 @@ contract TurboMaster is Auth {
     }
 
     /*///////////////////////////////////////////////////////////////
-                           IMPOUNDER STORAGE
+                            GIBBER STORAGE
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice The Impounder custodian used by the Master and its Safes.
-    TurboImpounder public impounder;
+    /// @notice The Gibber module used by the Master and its Safes.
+    TurboGibber public gibber;
 
-    /// @notice Emitted when the Impounder is updated.
-    /// @param user The user who triggered the update of the Impounder.
-    /// @param newImpounder The new Impounder contract used by the Master.
-    event ImpounderUpdated(address indexed user, TurboImpounder newImpounder);
+    /// @notice Emitted when the Gibber is updated.
+    /// @param user The user who triggered the update of the Gibber.
+    /// @param newGibber The new Gibber contract used by the Master.
+    event GibberUpdated(address indexed user, TurboGibber newGibber);
 
-    /// @notice Update the Impounder used by the Master.
-    /// @param newImpounder The new Impounder contract to be used by the Master.
-    function setImpounder(TurboImpounder newImpounder) external requiresAuth {
-        impounder = newImpounder;
+    /// @notice Update the Gibber used by the Master.
+    /// @param newGibber The new Gibber contract to be used by the Master.
+    function setGibber(TurboGibber newGibber) external requiresAuth {
+        gibber = newGibber;
 
-        emit ImpounderUpdated(msg.sender, newImpounder);
+        emit GibberUpdated(msg.sender, newGibber);
     }
 
     /*///////////////////////////////////////////////////////////////
                              SAFE STORAGE
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice The total Fei currently boosting vaults.
     uint256 public totalBoosted;
 
-    /// @notice Maps Safe addresses to a boolean confirming they exist.
+    /// @notice Maps Safe addresses to a boolean confirming they were creating by the Master.
     mapping(TurboSafe => bool) public isSafe;
 
-    /// @notice Maps Vault addresses to the total amount of Fei they've been boosted.
-    mapping(CERC20 => uint256) public getTotalBoostedForVault;
+    /// @notice Maps vault addresses to the total amount of Fei they've being boosted with.
+    mapping(ERC4626 => uint256) public getTotalBoostedForVault;
 
     /*///////////////////////////////////////////////////////////////
                           SAFE CREATION LOGIC
@@ -140,7 +140,13 @@ contract TurboMaster is Auth {
 
         isSafe[safe] = true;
 
-        // TODO: Authorize the Safe to the Turbo Fuse Pool.
+        address[] memory users = new address[](1);
+        bool[] memory enabled = new bool[](1);
+
+        users[0] = msg.sender;
+        enabled[0] = true;
+
+        pool._setWhitelistStatuses(users, enabled);
 
         emit TurboSafeCreated(msg.sender, underlying, safe);
     }
@@ -149,26 +155,24 @@ contract TurboMaster is Auth {
                           SAFE CALLBACK LOGIC
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Callback triggered whenever a Safe boosts a Vault.
-    /// @param vault The Vault that was boosted.
-    /// @param feiAmount The amount of Fei used to boost the Vault.
-    function onSafeBoost(CERC20 vault, uint256 feiAmount) external {
-        require(isSafe[msg.sender], "INVALID_SAFE");
+    /// @notice Callback triggered whenever a Safe boosts a vault.
+    /// @param vault The vault that was boosted.
+    /// @param feiAmount The amount of Fei used to boost the vault.
+    function onSafeBoost(ERC4626 vault, uint256 feiAmount) external {
+        require(isSafe[TurboSafe(msg.sender)], "INVALID_SAFE");
+
+        require(booster.canSafeBoostVault(TurboSafe(msg.sender), vault, feiAmount), "BOOSTER_REJECTED");
 
         getTotalBoostedForVault[vault] += feiAmount;
 
         totalBoosted += feiAmount;
     }
 
-    /// @notice Callback triggered whenever a Safe withdraws from a Vault.
-    /// @param vault The Vault that was withdrawn from.
-    /// @param feiAmount The amount of Fei withdrawn from the Vault.
-    function onSafeLess(
-        TurboSafe safe,
-        CERC20 vault,
-        uint256 feiAmount
-    ) external {
-        require(isSafe[msg.sender], "INVALID_SAFE");
+    /// @notice Callback triggered whenever a Safe withdraws from a vault.
+    /// @param vault The vault that was withdrawn from.
+    /// @param feiAmount The amount of Fei withdrawn from the vault.
+    function onSafeLess(ERC4626 vault, uint256 feiAmount) external {
+        require(isSafe[TurboSafe(msg.sender)], "INVALID_SAFE");
 
         getTotalBoostedForVault[vault] -= feiAmount;
 

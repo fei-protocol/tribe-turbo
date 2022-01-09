@@ -3,7 +3,7 @@ pragma solidity 0.8.10;
 
 import {Auth, Authority} from "solmate/auth/Auth.sol";
 
-import {CERC20} from "../interfaces/CERC20.sol";
+import {ERC4626} from "../interfaces/ERC4626.sol";
 
 import {TurboSafe} from "../TurboSafe.sol";
 import {TurboMaster} from "../TurboMaster.sol";
@@ -41,16 +41,16 @@ contract TurboBooster is Auth {
                           AUTHORIZATOIN LOGIC
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Returns whether a Safe is authorized to boost a Vault.
-    /// @param safe The Safe to check is authorized to boost the Vault.
-    /// @param vault The Vault to check the Safe is authorized to boost.
-    /// @param feiAmount The amount of Fei asset to check the Safe is authorized boost the Vault with.
-    /// @return Whether the Safe is authorized to boost the Vault with the given amount of Fei asset.
+    /// @notice Returns whether a Safe is authorized to boost a vault.
+    /// @param safe The Safe to check is authorized to boost the vault.
+    /// @param vault The vault to check the Safe is authorized to boost.
+    /// @param feiAmount The amount of Fei asset to check the Safe is authorized boost the vault with.
+    /// @return Whether the Safe is authorized to boost the vault with the given amount of Fei asset.
     function canSafeBoostVault(
         TurboSafe safe,
-        CERC20 vault,
+        ERC4626 vault,
         uint256 feiAmount
-    ) external view returns (uint256) {
+    ) external view returns (bool) {
         // TODO: Call the master, check caps, n such.
     }
 }
