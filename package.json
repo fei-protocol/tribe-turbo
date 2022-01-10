@@ -1,7 +1,7 @@
 {
   "name": "@fei-protocol/tribe-turbo",
   "license": "AGPL-3.0-only",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "Fuse liquidity accelerator for friends of the Tribe.",
   "files": [
     "src/**/*.sol"
