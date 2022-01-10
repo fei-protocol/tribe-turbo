@@ -197,8 +197,21 @@ contract TurboMaster is Auth {
         // Ensure the Safe was created by this Master.
         require(getSafeId[safe] != 0, "INVALID_SAFE");
 
+        // Get the Safe's underlying token.
+        ERC20 underlying = safe.underlying();
+
         // Check with the booster that the Safe is allowed to boost the vault using this amount of Fei.
-        require(booster.canSafeBoostVault(safe, vault, feiAmount), "BOOSTER_REJECTED");
+        require(
+            booster.canSafeBoostVault(
+                safe,
+                underlying,
+                vault,
+                feiAmount,
+                getTotalBoostedForVault[vault],
+                getTotalBoostedAgainstCollateral[underlying]
+            ),
+            "BOOSTER_REJECTED"
+        );
 
         unchecked {
             // Update the total amount of Fei being using to boost the vault.
