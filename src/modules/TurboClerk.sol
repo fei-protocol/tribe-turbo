@@ -33,7 +33,7 @@ contract TurboClerk is Auth {
 
     /// @notice Sets the default fee percentage.
     /// @param newDefaultFeePercentage The new default fee percentage.
-    function setDefaultFeePercentage(uint256 newDefaultFeePercentage) external {
+    function setDefaultFeePercentage(uint256 newDefaultFeePercentage) external requiresAuth {
         // A fee percentage over 100% makes no sense.
         require(newDefaultFeePercentage <= 1e18, "FEE_TOO_HIGH");
 
