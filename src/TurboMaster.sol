@@ -113,6 +113,27 @@ contract TurboMaster is Auth {
     }
 
     /*///////////////////////////////////////////////////////////////
+                  DEFAULT SAFE AUTHORITY CONFIGURATION
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice The default authority to be used by created Safes.
+    Authority public defaultSafeAuthority;
+
+    /// @notice Emitted when the default safe authority is updated.
+    /// @param user The user who triggered the update of the default safe authority.
+    /// @param newDefaultSafeAuthority The new default authority to be used by created Safes.
+    event DefaultSafeAuthorityUpdated(address indexed user, Authority newDefaultSafeAuthority);
+
+    /// @notice Set the default authority to be used by created Safes.
+    /// @param newDefaultSafeAuthority The new default safe authority.
+    function setDefaultSafeAuthority(Authority newDefaultSafeAuthority) external requiresAuth {
+        // Update the default safe authority.
+        defaultSafeAuthority = newDefaultSafeAuthority;
+
+        emit DefaultSafeAuthorityUpdated(msg.sender, newDefaultSafeAuthority);
+    }
+
+    /*///////////////////////////////////////////////////////////////
                              SAFE STORAGE
     //////////////////////////////////////////////////////////////*/
 
@@ -154,8 +175,8 @@ contract TurboMaster is Auth {
     /// @param underlying The ERC20 token that the Safe should accept.
     /// @return safe The newly deployed Turbo Safe which accepts the provided underlying token.
     function createSafe(ERC20 underlying) external requiresAuth returns (TurboSafe safe, uint256 id) {
-        // Create a new Safe using the provided underlying token.
-        safe = new TurboSafe(msg.sender, underlying);
+        // Create a new Safe using the default authority and provided underlying token.
+        safe = new TurboSafe(msg.sender, defaultSafeAuthority, underlying);
 
         // Add the safe to the list of Safes.
         safes.push(safe);

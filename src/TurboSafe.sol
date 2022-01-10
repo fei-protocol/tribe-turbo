@@ -55,9 +55,15 @@ contract TurboSafe is Auth, ERC20, ERC4626 {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Creates a new Safe that accepts a specific underlying token.
+    /// @param _owner The owner of the Safe.
+    /// @param _authority The Authority of the Safe.
     /// @param _underlying The ERC20 compliant token the Safe should accept.
-    constructor(address _owner, ERC20 _underlying)
-        Auth(_owner, Authority(address(0)))
+    constructor(
+        address _owner,
+        Authority _authority,
+        ERC20 _underlying
+    )
+        Auth(_owner, _authority)
         ERC4626(
             _underlying,
             // ex: Dai Stablecoin Turbo Safe
