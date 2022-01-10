@@ -221,6 +221,12 @@ contract TurboMaster is Auth {
         // Get the Safe's underlying token.
         ERC20 underlying = safe.underlying();
 
+        // Get the total amount of Fei currently boosting the vault.
+        uint256 totalBoostedForVault = getTotalBoostedForVault[vault];
+
+        // Get the total amount of Fei boosted with the Safe's collateral type.
+        uint256 totalBoostedAgainstCollateral = getTotalBoostedAgainstCollateral[underlying];
+
         // Check with the booster that the Safe is allowed to boost the vault using this amount of Fei.
         require(
             booster.canSafeBoostVault(
@@ -228,8 +234,8 @@ contract TurboMaster is Auth {
                 underlying,
                 vault,
                 feiAmount,
-                getTotalBoostedForVault[vault],
-                getTotalBoostedAgainstCollateral[underlying]
+                totalBoostedForVault,
+                totalBoostedAgainstCollateral
             ),
             "BOOSTER_REJECTED"
         );
@@ -237,7 +243,7 @@ contract TurboMaster is Auth {
         unchecked {
             // Update the total amount of Fei being using to boost the vault.
             // Overflow is safe because it will be caught when updating the total against collateral.
-            getTotalBoostedForVault[vault] += feiAmount;
+            getTotalBoostedForVault[vault] = totalBoostedForVault + feiAmount;
 
             // Update the total amount of Fei being using to boost vaults.
             // Overflow is safe because it will be caught when updating the total against collateral.
@@ -245,7 +251,7 @@ contract TurboMaster is Auth {
         }
 
         // Update the total amount of Fei boosted against the collateral type.
-        getTotalBoostedAgainstCollateral[safe.underlying()] += feiAmount;
+        getTotalBoostedAgainstCollateral[safe.underlying()] = totalBoostedAgainstCollateral + feiAmount;
     }
 
     /// @notice Callback triggered whenever a Safe withdraws from a vault.
