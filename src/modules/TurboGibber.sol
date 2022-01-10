@@ -32,8 +32,12 @@ contract TurboGibber is Auth {
                           ATOMIC IMPOUND LOGIC
     //////////////////////////////////////////////////////////////*/
 
-    // TODO: event
-    // TODO: natspec
+    /// @notice Emitted an impound is executed.
+    /// @param user The user who executed the impound.
+    /// @param safe The Safe that was impounded.
+    /// @param feiAmount The amount of Fei that was repaid.
+    /// @param underlyingAmount The amount of underlying tokens impounded.
+    event ImpoundExecuted(address indexed user, TurboSafe indexed safe, uint256 feiAmount, uint256 underlyingAmount);
 
     function impound(
         TurboSafe safe,
@@ -46,6 +50,8 @@ contract TurboGibber is Auth {
 
         // Get Fei's cToken in the Turbo Fuse Pool.
         CERC20 feiCToken = safe.feiTurboCToken();
+
+        emit ImpoundExecuted(msg.sender, safe, feiAmount, underlyingAmount);
 
         // Mint the Fei amount requested.
         fei.mint(address(this), feiAmount);
@@ -74,6 +80,11 @@ contract TurboGibber is Auth {
         // Get the underlying cToken in the Turbo Fuse Pool.
         CERC20 underlyingCToken = safe.underlyingTurboCToken();
 
+        // Get the amount of underlying tokens to impound from the Safe.
+        uint256 underlyingAmount = underlyingCToken.balanceOfUnderlying(address(safe));
+
+        emit ImpoundExecuted(msg.sender, safe, feiAmount, underlyingAmount);
+
         // Mint the Fei amount requested.
         fei.mint(address(this), feiAmount);
 
@@ -84,6 +95,6 @@ contract TurboGibber is Auth {
         feiCToken.repayBorrowBehalf(address(safe), feiAmount);
 
         // Impound all of the safe's collateral and send it to the chosen recipient.
-        safe.gib(to, underlyingCToken.balanceOfUnderlying(address(safe)));
+        safe.gib(to, underlyingAmount);
     }
 }
