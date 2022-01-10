@@ -2,14 +2,13 @@
 pragma solidity 0.8.10;
 
 import {ERC20} from "solmate-next/tokens/ERC20.sol";
+import {ERC4626} from "solmate-next/mixins/ERC4626.sol";
 import {Auth, Authority} from "solmate-next/auth/Auth.sol";
 import {SafeTransferLib} from "solmate-next/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "solmate-next/utils/FixedPointMathLib.sol";
 
 import {LibFuse} from "libcompound/LibFuse.sol";
 import {CERC20} from "libcompound/interfaces/CERC20.sol";
-
-import {ERC4626} from "solmate-next/mixins/ERC4626.sol";
 
 import {Comptroller} from "./interfaces/Comptroller.sol";
 
