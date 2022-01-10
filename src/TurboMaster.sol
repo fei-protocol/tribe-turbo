@@ -268,7 +268,7 @@ contract TurboMaster is Auth {
 
             // Update the total amount of Fei boosted against the collateral type.
             // Cannot underflow because the total cannot be lower than a single Safe.
-            getTotalBoostedAgainstCollateral[safe.underlying()] += feiAmount;
+            getTotalBoostedAgainstCollateral[safe.underlying()] -= feiAmount;
         }
     }
 
