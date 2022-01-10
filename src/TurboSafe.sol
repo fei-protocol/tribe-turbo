@@ -256,7 +256,7 @@ contract TurboSafe is Auth, ERC20, ERC4626 {
     /// @param amount The amount of the token that was sweeped.
     event TokenSweeped(address indexed user, address indexed to, ERC20 indexed token, uint256 amount);
 
-    /// @notice Claim Fei accrued as interest to the Safe.
+    /// @notice Claim tokens sitting idly in the Safe.
     /// @param to The recipient of the sweeped tokens.
     /// @param token The token to sweep and send.
     /// @param amount The amount of the token to sweep.
@@ -265,6 +265,13 @@ contract TurboSafe is Auth, ERC20, ERC4626 {
         ERC20 token,
         uint256 amount
     ) external requiresAuth {
+        // Ensure the caller is not trying to steal vault shares or collateral cTokens.
+        require(
+            getTotalFeiBoostedForVault[ERC4626(address(token))] == 0 &&
+                address(token) != address(underlyingTurboCToken),
+            "INVALID_TOKEN"
+        );
+
         emit TokenSweeped(msg.sender, to, token, amount);
 
         token.safeTransfer(to, amount);
