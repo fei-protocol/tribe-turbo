@@ -58,25 +58,47 @@ contract TurboBooster is Auth {
     }
 
     /*///////////////////////////////////////////////////////////////
-                         BOOST CAP CONFIGURATION
+                     VAULT BOOST CAP CONFIGURATION
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Maps Safes to the cap on the amount of Fei used to boost them.
-    mapping(TurboSafe => uint256) public getBoostCapForSafe;
+    /// @notice Maps vaults to the cap on the amount of Fei used to boost them.
+    mapping(ERC4626 => uint256) public getBoostCapForVault;
 
-    /// @notice Emitted when a Safe's boost cap is updated.
-    /// @param safe The Safe who's boost cap was updated.
-    /// @param newBoostCap The new boost cap for the Safe.
-    event BoostCapUpdatedForSafe(address indexed user, TurboSafe indexed safe, uint256 newBoostCap);
+    /// @notice Emitted when a vault's boost cap is updated.
+    /// @param vault The vault who's boost cap was updated.
+    /// @param newBoostCap The new boost cap for the vault.
+    event BoostCapUpdatedForVault(address indexed user, ERC4626 indexed vault, uint256 newBoostCap);
 
-    /// @notice Sets a Safe's boost cap.
-    /// @param safe The Safe to set the boost cap for.
-    /// @param newBoostCap The new boost cap for the Safe.
-    function setBoostCapForSafe(TurboSafe safe, uint256 newBoostCap) external requiresAuth {
-        // Update the boost cap for the Safe.
-        getBoostCapForSafe[safe] = newBoostCap;
+    /// @notice Sets a vault's boost cap.
+    /// @param vault The vault to set the boost cap for.
+    /// @param newBoostCap The new boost cap for the vault.
+    function setBoostCapForVault(ERC4626 vault, uint256 newBoostCap) external requiresAuth {
+        // Update the boost cap for the vault.
+        getBoostCapForVault[vault] = newBoostCap;
 
-        emit BoostCapUpdatedForSafe(msg.sender, safe, newBoostCap);
+        emit BoostCapUpdatedForVault(msg.sender, vault, newBoostCap);
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                     COLLATERAL BOOST CAP CONFIGURATION
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice Maps collateral types to the cap on the amount of Fei boosted against them.
+    mapping(ERC20 => uint256) public getBoostCapForCollateral;
+
+    /// @notice Emitted when a collateral type's boost cap is updated.
+    /// @param collateral The collateral type who's boost cap was updated.
+    /// @param newBoostCap The new boost cap for the collateral type.
+    event BoostCapUpdatedForCollateral(address indexed user, ERC20 indexed collateral, uint256 newBoostCap);
+
+    /// @notice Sets a collateral type's boost cap.
+    /// @param collateral The collateral type to set the boost cap for.
+    /// @param newBoostCap The new boost cap for the collateral type.
+    function setBoostCapForCollateral(ERC20 collateral, uint256 newBoostCap) external requiresAuth {
+        // Update the boost cap for the collateral type.
+        getBoostCapForCollateral[collateral] = newBoostCap;
+
+        emit BoostCapUpdatedForCollateral(msg.sender, collateral, newBoostCap);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -93,10 +115,11 @@ contract TurboBooster is Auth {
         ERC4626 vault,
         uint256 feiAmount
     ) external view returns (bool) {
-        // Ensure new boosts aren't frozen.
-        require(!frozen, "FROZEN");
+        ERC20 underlying = safe.underlying();
 
-        // Ensure the boost would not result in the total boost amount exceeding the vault's cap.
-        require(getBoostCapForSafe[safe] > (feiAmount + master.getTotalBoostedForVault(vault)), "EXCEEDS_CAP");
+        return
+            !frozen &&
+            getBoostCapForVault[vault] > (feiAmount + master.getTotalBoostedForVault(vault)) &&
+            getBoostCapForCollateral[underlying] > (feiAmount + master.getTotalBoostedAgainstCollateral(underlying));
     }
 }
