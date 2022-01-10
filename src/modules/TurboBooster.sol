@@ -87,7 +87,7 @@ contract TurboBooster is Auth {
     }
 
     /*///////////////////////////////////////////////////////////////
-                          AUTHORIZATOIN LOGIC
+                          AUTHORIZATION LOGIC
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Returns whether a Safe is authorized to boost a vault.
@@ -95,20 +95,20 @@ contract TurboBooster is Auth {
     /// @param collateral The collateral/underlying token of the Safe.
     /// @param vault The vault to check the Safe is authorized to boost.
     /// @param feiAmount The amount of Fei asset to check the Safe is authorized boost the vault with.
-    /// @param totalBoostedForVault The total amount of Fei currently boosted to the vault.
-    /// @param totalBoostedAgainstCollateral The total amount of Fei boosted against the Safe's collateral type.
+    /// @param newTotalBoostedForVault The total amount of Fei that will boosted to the vault after boost (if it is not rejected).
+    /// @param newTotalBoostedAgainstCollateral The total amount of Fei that will be boosted against the Safe's collateral type after this boost.
     /// @return Whether the Safe is authorized to boost the vault with the given amount of Fei asset.
     function canSafeBoostVault(
         TurboSafe safe,
         ERC20 collateral,
         ERC4626 vault,
         uint256 feiAmount,
-        uint256 totalBoostedForVault,
-        uint256 totalBoostedAgainstCollateral
+        uint256 newTotalBoostedForVault,
+        uint256 newTotalBoostedAgainstCollateral
     ) external view returns (bool) {
         return
             !frozen &&
-            getBoostCapForVault[vault] > (feiAmount + totalBoostedForVault) &&
-            getBoostCapForCollateral[collateral] > (feiAmount + totalBoostedAgainstCollateral);
+            getBoostCapForVault[vault] > newTotalBoostedForVault &&
+            getBoostCapForCollateral[collateral] > newTotalBoostedAgainstCollateral;
     }
 }

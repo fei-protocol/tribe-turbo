@@ -221,11 +221,11 @@ contract TurboMaster is Auth {
         // Get the Safe's underlying token.
         ERC20 underlying = safe.underlying();
 
-        // Get the total amount of Fei currently boosting the vault.
-        uint256 totalBoostedForVault = getTotalBoostedForVault[vault];
+        // Compute the total amount of Fei that will be boosting the vault.
+        uint256 newTotalBoostedForVault = getTotalBoostedForVault[vault] + feiAmount;
 
-        // Get the total amount of Fei boosted with the Safe's collateral type.
-        uint256 totalBoostedAgainstCollateral = getTotalBoostedAgainstCollateral[underlying];
+        // Compute the total amount of Fei boosted that will be boosted the Safe's collateral type.
+        uint256 newTotalBoostedAgainstCollateral = getTotalBoostedAgainstCollateral[underlying] + feiAmount;
 
         // Check with the booster that the Safe is allowed to boost the vault using this amount of Fei.
         require(
@@ -234,24 +234,23 @@ contract TurboMaster is Auth {
                 underlying,
                 vault,
                 feiAmount,
-                totalBoostedForVault,
-                totalBoostedAgainstCollateral
+                newTotalBoostedForVault,
+                newTotalBoostedAgainstCollateral
             ),
             "BOOSTER_REJECTED"
         );
 
         unchecked {
-            // Update the total amount of Fei being using to boost the vault.
-            // Overflow is safe because it will be caught when updating the total against collateral.
-            getTotalBoostedForVault[vault] = totalBoostedForVault + feiAmount;
-
             // Update the total amount of Fei being using to boost vaults.
             // Overflow is safe because it will be caught when updating the total against collateral.
             totalBoosted += feiAmount;
         }
 
+        // Update the total amount of Fei being using to boost the vault.
+        getTotalBoostedForVault[vault] = newTotalBoostedForVault;
+
         // Update the total amount of Fei boosted against the collateral type.
-        getTotalBoostedAgainstCollateral[safe.underlying()] = totalBoostedAgainstCollateral + feiAmount;
+        getTotalBoostedAgainstCollateral[safe.underlying()] = newTotalBoostedAgainstCollateral;
     }
 
     /// @notice Callback triggered whenever a Safe withdraws from a vault.
