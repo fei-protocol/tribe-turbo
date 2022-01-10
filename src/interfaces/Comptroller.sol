@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.10;
 
-import {ERC20} from "solmate/tokens/ERC20.sol";
+import {ERC20} from "solmate-next/tokens/ERC20.sol";
 
-import {CERC20} from "./CERC20.sol";
+import {CERC20} from "libcompound/interfaces/CERC20.sol";
 
 /// @title Comptroller
 /// @author Compound Labs and Rari Capital

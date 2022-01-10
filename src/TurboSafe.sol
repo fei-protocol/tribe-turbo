@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.10;
 
-import {ERC20} from "solmate/tokens/ERC20.sol";
-import {ERC4626} from "solmate/mixins/ERC4626.sol";
-import {Auth, Authority} from "solmate/auth/Auth.sol";
-import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
-import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
+import {ERC20} from "solmate-next/tokens/ERC20.sol";
+import {Auth, Authority} from "solmate-next/auth/Auth.sol";
+import {SafeTransferLib} from "solmate-next/utils/SafeTransferLib.sol";
+import {FixedPointMathLib} from "solmate-next/utils/FixedPointMathLib.sol";
 
-import {CERC20} from "./interfaces/CERC20.sol";
+import {LibFuse} from "libcompound/LibFuse.sol";
+import {CERC20} from "libcompound/interfaces/CERC20.sol";
+
+import {ERC4626} from "solmate-next/mixins/ERC4626.sol";
 
 import {Comptroller} from "./interfaces/Comptroller.sol";
 
@@ -17,6 +19,7 @@ import {TurboMaster} from "./TurboMaster.sol";
 /// @author Transmissions11
 /// @notice Fuse liquidity accelerator.
 contract TurboSafe is Auth, ERC20, ERC4626 {
+    using LibFuse for CERC20;
     using SafeTransferLib for ERC20;
     using FixedPointMathLib for uint256;
 
@@ -90,14 +93,16 @@ contract TurboSafe is Auth, ERC20, ERC4626 {
 
     /// @notice Called before any type of withdrawal occurs.
     /// @param underlyingAmount The amount of underlying tokens being withdrawn.
-    function beforeWithdraw(uint256 underlyingAmount) internal override {
+    /// @dev Using requiresAuth here prevents unauthorized users from withdrawing.
+    function beforeWithdraw(uint256 underlyingAmount) internal override requiresAuth {
         // Withdraw the underlying tokens from the Turbo Fuse Pool.
         require(underlyingTurboCToken.redeemUnderlying(underlyingAmount) == 0, "REDEEM_FAILED");
     }
 
     /// @notice Called before any type of deposit occurs.
     /// @param underlyingAmount The amount of underlying tokens being deposited.
-    function afterDeposit(uint256 underlyingAmount) internal override {
+    /// @dev Using requiresAuth here prevents unauthorized users from depositing.
+    function afterDeposit(uint256 underlyingAmount) internal override requiresAuth {
         // Approve the underlying tokens to the Turbo Fuse Pool.
         underlying.approve(address(underlyingTurboCToken), underlyingAmount);
 
@@ -108,7 +113,7 @@ contract TurboSafe is Auth, ERC20, ERC4626 {
     /// @notice Returns the total amount of underlying tokens held in the Safe.
     /// @return The total amount of underlying tokens held in the Safe.
     function totalHoldings() public view override returns (uint256) {
-        // TODO: this require libcompound
+        return underlyingTurboCToken.viewUnderlyingBalanceOf(address(this));
     }
 
     /*///////////////////////////////////////////////////////////////
