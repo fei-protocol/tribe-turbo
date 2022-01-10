@@ -264,16 +264,17 @@ contract TurboMaster is Auth {
         // Ensure the Safe was created by this Master.
         require(getSafeId[safe] != 0, "INVALID_SAFE");
 
-        // Update the total amount of Fei being using to boost the vault.
-        getTotalBoostedForVault[vault] -= feiAmount;
-
         unchecked {
+            // Update the total amount of Fei being using to boost the vault.
+            // Cannot underflow as the Safe validated the withdrawal amount before.
+            getTotalBoostedForVault[vault] -= feiAmount;
+
             // Update the total amount of Fei being using to boost vaults.
-            // Cannot underflow because the total cannot be lower than a single Safe.
+            // Cannot underflow as the Safe validated the withdrawal amount earlier.
             totalBoosted -= feiAmount;
 
             // Update the total amount of Fei boosted against the collateral type.
-            // Cannot underflow because the total cannot be lower than a single Safe.
+            // Cannot underflow as the Safe validated the withdrawal amount previously.
             getTotalBoostedAgainstCollateral[safe.underlying()] -= feiAmount;
         }
     }
