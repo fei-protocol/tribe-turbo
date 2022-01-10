@@ -274,6 +274,7 @@ contract TurboSafe is Auth, ERC20, ERC4626 {
 
         emit TokenSweeped(msg.sender, to, token, amount);
 
+        // Transfer the sweeped tokens to the recipient.
         token.safeTransfer(to, amount);
     }
 
