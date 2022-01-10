@@ -9,6 +9,7 @@ Fuse liquidity accelerator for friends of the Tribe.
 - `boost`: borrow fei and deposit it into an authorized cToken
 - `less`: redeem fei from a deposited cToken and repay fei loan
 - `slurp`: accrue fees earned on fei deposited into a cToken to the master
+- `sweep`: claim interest or other tokens lying idle in a safe 
 - `gib`: impound the collateral of a safe (requires special auth from the custodian)
 
 ## Getting Started
