@@ -187,7 +187,6 @@ contract TurboSafe is Auth, ERC20, ERC4626 {
         uint256 protocolFeeAmount = interestEarned.fmul(protocolFeePercent, 1e18);
 
         // Compute the amount of Fei the Safe will retain as interest.
-
         uint256 safeInterestAmount = interestEarned - protocolFeeAmount;
 
         unchecked {

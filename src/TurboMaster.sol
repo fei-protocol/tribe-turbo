@@ -132,7 +132,7 @@ contract TurboMaster is Auth {
     /// @return An array of all Safes created by the Master.
     /// @dev This is provided because Solidity converts public arrays into index getters,
     /// but we need a way to allow external contracts and users to access the whole array.
-    function getAllSafes() external view returns (address[] memory) {
+    function getAllSafes() external view returns (TurboSafe[] memory) {
         return safes;
     }
 
