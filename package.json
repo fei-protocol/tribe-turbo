@@ -1,5 +1,5 @@
 {
-  "name": "fei-turbo",
+  "name": "@fei-protocol/tribe-turbo",
   "license": "AGPL-3.0-only",
   "version": "1.0.0",
   "description": "Fuse liquidity accelerator for friends of the Tribe.",
@@ -8,7 +8,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/fei-protocol/fei-turbo.git"
+    "url": "git+https://github.com/fei-protocol/tribe-turbo.git"
   },
   "devDependencies": {
     "prettier": "^2.3.1",

@@ -8,7 +8,7 @@ let
 in
   pkgs.mkShell {
     src = null;
-    name = "fei-turbo";
+    name = "tribe-turbo";
     buildInputs = with pkgs; [
       pkgs.dapp
     ];
