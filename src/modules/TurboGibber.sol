@@ -39,6 +39,11 @@ contract TurboGibber is Auth {
     /// @param underlyingAmount The amount of underlying tokens impounded.
     event ImpoundExecuted(address indexed user, TurboSafe indexed safe, uint256 feiAmount, uint256 underlyingAmount);
 
+    /// @notice Impound a safe.
+    /// @param safe The Safe to be impounded.
+    /// @param feiAmount The amount of Fei to repay the Safe's debt with.
+    /// @param underlyingAmount The amount of underlying tokens to impound.
+    /// @param to The recipient of the impounded collateral tokens.
     function impound(
         TurboSafe safe,
         uint256 feiAmount,
@@ -66,11 +71,10 @@ contract TurboGibber is Auth {
         safe.gib(to, underlyingAmount);
     }
 
-    function impoundAll(
-        TurboSafe safe,
-        uint256 feiAmount,
-        address to
-    ) external requiresAuth {
+    /// @notice Impound all of a safe's collateral.
+    /// @param safe The Safe to be impounded.
+    /// @param to The recipient of the impounded collateral tokens.
+    function impoundAll(TurboSafe safe, address to) external requiresAuth {
         // Get the Fei token the Safe uses.
         Fei fei = Fei(address(safe.fei()));
 
@@ -82,6 +86,9 @@ contract TurboGibber is Auth {
 
         // Get the amount of underlying tokens to impound from the Safe.
         uint256 underlyingAmount = underlyingCToken.balanceOfUnderlying(address(safe));
+
+        // Get the amount of Fei debt to repay for the Safe.
+        uint256 feiAmount = underlyingCToken.borrowBalanceCurrent(address(safe));
 
         emit ImpoundExecuted(msg.sender, safe, feiAmount, underlyingAmount);
 
