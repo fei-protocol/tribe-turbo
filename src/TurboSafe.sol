@@ -81,11 +81,15 @@ contract TurboSafe is Auth, ERC20, ERC4626 {
                              ERC4626 LOGIC
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice Called before any type of withdrawal occurs.
+    /// @param underlyingAmount The amount of underlying tokens being withdrawn.
     function beforeWithdraw(uint256 underlyingAmount) internal override {
         // Withdraw the underlying tokens from the Turbo Fuse Pool.
         require(underlyingTurboCToken.redeemUnderlying(underlyingAmount) == 0, "REDEEM_FAILED");
     }
 
+    /// @notice Called before any type of deposit occurs.
+    /// @param underlyingAmount The amount of underlying tokens being deposited.
     function afterDeposit(uint256 underlyingAmount) internal override {
         // Approve the underlying tokens to the Turbo Fuse Pool.
         underlying.approve(address(underlyingTurboCToken), underlyingAmount);
@@ -94,6 +98,8 @@ contract TurboSafe is Auth, ERC20, ERC4626 {
         require(underlyingTurboCToken.mint(underlyingAmount) == 0, "MINT_FAILED");
     }
 
+    /// @notice Returns the total amount of underlying tokens held in the Safe.
+    /// @return The total amount of underlying tokens held in the Safe.
     function totalHoldings() public view override returns (uint256) {
         // TODO: this require libcompound
     }
@@ -101,6 +107,8 @@ contract TurboSafe is Auth, ERC20, ERC4626 {
     /*///////////////////////////////////////////////////////////////
                              SAFE LOGIC
     //////////////////////////////////////////////////////////////*/
+
+    // TODO: event
 
     /// @notice Borrow Fei from the Turbo Fuse Pool and deposit it into an authorized vault.
     /// @param vault The vault to deposit the borrowed Fei into.
@@ -134,6 +142,8 @@ contract TurboSafe is Auth, ERC20, ERC4626 {
         // Deposit the Fei into the specified vault.
         vault.deposit(address(this), feiAmount);
     }
+
+    // TODO: event
 
     /// @notice Withdraw Fei from a deposited vault and use it to repay debt in the Turbo Fuse Pool.
     /// @param vault The vault to withdraw the Fei from.
@@ -170,6 +180,8 @@ contract TurboSafe is Auth, ERC20, ERC4626 {
         // Call the Master to allow it to update its accounting.
         master.onSafeLess(vault, feiAmount);
     }
+
+    // TODO: event
 
     /// @notice Accrue any fees earned by the Safe in the vault to the Master.
     /// @param vault The vault to accrue fees from and send to the Master.
@@ -208,11 +220,15 @@ contract TurboSafe is Auth, ERC20, ERC4626 {
         }
     }
 
+    // TODO: event
+
     /// @notice Claim Fei accrued as fees to the Safe.
     /// @param feiAmount The amount of Fei to claim.
     function sip(uint256 feiAmount) external requiresAuth {
         fei.safeTransfer(msg.sender, feiAmount);
     }
+
+    // TODO: event
 
     /// @notice Impound a specific amount of a Safe's collateral.
     /// @param to The address to send the impounded collateral to.
