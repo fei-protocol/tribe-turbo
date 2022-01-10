@@ -157,8 +157,11 @@ contract TurboMaster is Auth {
         // Add the safe to the list of Safes.
         safes.push(safe);
 
-        // Get the index/id of the new Safe.
-        id = safes.length - 1;
+        unchecked {
+            // Get the index/id of the new Safe.
+            // Cannot underflow, we just pushed to it.
+            id = safes.length - 1;
+        }
 
         // Store the id/index of the new Safe.
         getSafeId[safe] = id;
@@ -191,8 +194,11 @@ contract TurboMaster is Auth {
         // Check with the booster that the Safe is allowed to boost the vault using this amount of Fei.
         require(booster.canSafeBoostVault(TurboSafe(msg.sender), vault, feiAmount), "BOOSTER_REJECTED");
 
-        // Update the total amount of Fei being using to boost the vault.
-        getTotalBoostedForVault[vault] += feiAmount;
+        unchecked {
+            // Update the total amount of Fei being using to boost the vault.
+            // Overflow is safe because it will be caught when updating the total.
+            getTotalBoostedForVault[vault] += feiAmount;
+        }
 
         // Update the total amount of Fei being using to boost vaults.
         totalBoosted += feiAmount;
@@ -208,8 +214,11 @@ contract TurboMaster is Auth {
         // Update the total amount of Fei being using to boost the vault.
         getTotalBoostedForVault[vault] -= feiAmount;
 
-        // Update the total amount of Fei being using to boost vaults.
-        totalBoosted -= feiAmount;
+        unchecked {
+            // Update the total amount of Fei being using to boost vaults.
+            // Cannot underflow because the total cannot be lower than a single Safe.
+            totalBoosted -= feiAmount;
+        }
     }
 
     /*///////////////////////////////////////////////////////////////
