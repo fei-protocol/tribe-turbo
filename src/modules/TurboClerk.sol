@@ -106,11 +106,14 @@ contract TurboClerk is Auth {
         // If a custom fee percentage is set for the Safe, return it.
         if (getCustomFeePercentageForSafe[safe] != 0) return getCustomFeePercentageForSafe[safe];
 
+        // Get the Safe's underlying token.
         ERC20 underlying = safe.underlying();
 
+        // Get the custom fee percentage for the collateral type.
+        uint256 customFeePercentageForCollateral = getCustomFeePercentageForCollateral[underlying];
+
         // If a custom fee percentage is set for the collateral, return it.
-        if (getCustomFeePercentageForCollateral[underlying] != 0)
-            return getCustomFeePercentageForCollateral[underlying];
+        if (customFeePercentageForCollateral != 0) return customFeePercentageForCollateral;
 
         // Otherwise, return the default fee percentage.
         return defaultFeePercentage;
