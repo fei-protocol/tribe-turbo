@@ -183,7 +183,7 @@ contract TurboSafe is Auth, ERC20, ERC4626 {
         uint256 feiDebt = feiTurboCToken.borrowBalanceCurrent(address(this));
 
         // If our debt balance decreased, repay the minimum.
-        // The surplus Fei will accrue as fees and can be sipped.
+        // The surplus Fei will accrue as fees and can be sweeped.
         if (feiAmount > feiDebt) feiAmount = feiDebt;
 
         // Repay the specified amount of Fei in the Turbo Fuse Pool.
@@ -244,18 +244,24 @@ contract TurboSafe is Auth, ERC20, ERC4626 {
         }
     }
 
-    /// @notice Emitted when the Safe is sipped.
-    /// @param user The user who sipped the Safe.
-    /// @param to The recipient of the sipped interest.
-    /// @param feiAmount The amount of Fei that was sipped.
-    event SafeSipped(address indexed user, address indexed to, uint256 feiAmount);
+    /// @notice Emitted a token is sweeped from the Safe.
+    /// @param user The user who sweeped the token from the Safe.
+    /// @param to The recipient of the sweeped tokens.
+    /// @param amount The amount of the token that was sweeped.
+    event TokenSweeped(address indexed user, address indexed to, ERC20 indexed token, uint256 amount);
 
     /// @notice Claim Fei accrued as interest to the Safe.
-    /// @param feiAmount The amount of Fei to claim.
-    function sip(address to, uint256 feiAmount) external requiresAuth {
-        emit SafeSipped(msg.sender, to, feiAmount);
+    /// @param to The recipient of the sweeped tokens.
+    /// @param token The token to sweep and send.
+    /// @param amount The amount of the token to sweep.
+    function sweep(
+        address to,
+        ERC20 token,
+        uint256 amount
+    ) external requiresAuth {
+        emit TokenSweeped(msg.sender, to, token, amount);
 
-        fei.safeTransfer(to, feiAmount);
+        token.safeTransfer(to, amount);
     }
 
     /// @notice Emitted when a Safe is gibbed.
