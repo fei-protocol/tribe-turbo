@@ -33,8 +33,9 @@ contract TurboGibber is Auth {
     //////////////////////////////////////////////////////////////*/
 
     // TODO: event
+    // TODO: natspec
 
-    function impoundSafe(
+    function impound(
         TurboSafe safe,
         uint256 feiAmount,
         uint256 underlyingAmount,
@@ -43,7 +44,8 @@ contract TurboGibber is Auth {
         // Get the Fei token the Safe uses.
         Fei fei = Fei(address(safe.fei()));
 
-        CERC20 feiCToken = safe.feiCToken();
+        // Get Fei's cToken in the Turbo Fuse Pool.
+        CERC20 feiCToken = safe.feiTurboCToken();
 
         // Mint the Fei amount requested.
         fei.mint(address(this), feiAmount);
@@ -54,7 +56,34 @@ contract TurboGibber is Auth {
         // Repay the safe's Fei debt with the minted Fei.
         feiCToken.repayBorrowBehalf(address(safe), feiAmount);
 
-        // Impound the safe's collateral and send it to the chosen recipient.
+        // Impound some of the safe's collateral and send it to the chosen recipient.
         safe.gib(to, underlyingAmount);
+    }
+
+    function impoundAll(
+        TurboSafe safe,
+        uint256 feiAmount,
+        address to
+    ) external requiresAuth {
+        // Get the Fei token the Safe uses.
+        Fei fei = Fei(address(safe.fei()));
+
+        // Get Fei's cToken in the Turbo Fuse Pool.
+        CERC20 feiCToken = safe.feiTurboCToken();
+
+        // Get the underlying cToken in the Turbo Fuse Pool.
+        CERC20 underlyingCToken = safe.underlyingTurboCToken();
+
+        // Mint the Fei amount requested.
+        fei.mint(address(this), feiAmount);
+
+        // Approve the Fei amount to the Fei cToken.
+        fei.approve(address(feiCToken), feiAmount);
+
+        // Repay the safe's Fei debt with the minted Fei.
+        feiCToken.repayBorrowBehalf(address(safe), feiAmount);
+
+        // Impound all of the safe's collateral and send it to the chosen recipient.
+        safe.gib(to, underlyingCToken.balanceOfUnderlying(address(safe)));
     }
 }
