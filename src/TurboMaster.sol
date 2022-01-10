@@ -125,6 +125,9 @@ contract TurboMaster is Auth {
     /// @notice Maps vault addresses to the total amount of Fei they've being boosted with.
     mapping(ERC4626 => uint256) public getTotalBoostedForVault;
 
+    /// @notice Maps collateral types to the total amount of Fei boosted by Safes using it as collateral.
+    mapping(ERC20 => uint256) public getTotalBoostedAgainstCollateral;
+
     /// @notice An array of all Safes created by the Master.
     TurboSafe[] public safes;
 
@@ -188,28 +191,38 @@ contract TurboMaster is Auth {
     /// @param vault The vault that was boosted.
     /// @param feiAmount The amount of Fei used to boost the vault.
     function onSafeBoost(ERC4626 vault, uint256 feiAmount) external {
+        // Get the caller as a Safe instance.
+        TurboSafe safe = TurboSafe(msg.sender);
+
         // Ensure the Safe was created by this Master.
-        require(getSafeId[TurboSafe(msg.sender)] != 0, "INVALID_SAFE");
+        require(getSafeId[safe] != 0, "INVALID_SAFE");
 
         // Check with the booster that the Safe is allowed to boost the vault using this amount of Fei.
-        require(booster.canSafeBoostVault(TurboSafe(msg.sender), vault, feiAmount), "BOOSTER_REJECTED");
+        require(booster.canSafeBoostVault(safe, vault, feiAmount), "BOOSTER_REJECTED");
 
         unchecked {
             // Update the total amount of Fei being using to boost the vault.
-            // Overflow is safe because it will be caught when updating the total.
+            // Overflow is safe because it will be caught when updating the total against collateral.
             getTotalBoostedForVault[vault] += feiAmount;
+
+            // Update the total amount of Fei being using to boost vaults.
+            // Overflow is safe because it will be caught when updating the total against collateral.
+            totalBoosted += feiAmount;
         }
 
-        // Update the total amount of Fei being using to boost vaults.
-        totalBoosted += feiAmount;
+        // Update the total amount of Fei boosted against the collateral type.
+        getTotalBoostedAgainstCollateral[safe.underlying()] += feiAmount;
     }
 
     /// @notice Callback triggered whenever a Safe withdraws from a vault.
     /// @param vault The vault that was withdrawn from.
     /// @param feiAmount The amount of Fei withdrawn from the vault.
     function onSafeLess(ERC4626 vault, uint256 feiAmount) external {
+        // Get the caller as a Safe instance.
+        TurboSafe safe = TurboSafe(msg.sender);
+
         // Ensure the Safe was created by this Master.
-        require(getSafeId[TurboSafe(msg.sender)] != 0, "INVALID_SAFE");
+        require(getSafeId[safe] != 0, "INVALID_SAFE");
 
         // Update the total amount of Fei being using to boost the vault.
         getTotalBoostedForVault[vault] -= feiAmount;
@@ -218,6 +231,10 @@ contract TurboMaster is Auth {
             // Update the total amount of Fei being using to boost vaults.
             // Cannot underflow because the total cannot be lower than a single Safe.
             totalBoosted -= feiAmount;
+
+            // Update the total amount of Fei boosted against the collateral type.
+            // Cannot underflow because the total cannot be lower than a single Safe.
+            getTotalBoostedAgainstCollateral[safe.underlying()] += feiAmount;
         }
     }
 
