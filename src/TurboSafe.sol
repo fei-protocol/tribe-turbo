@@ -245,7 +245,7 @@ contract TurboSafe is Auth, ERC20, ERC4626 {
 
         emit VaultSlurped(msg.sender, vault, protocolFeeAmount, safeInterestAmount);
 
-        // If we have an accrued fees:
+        // If we have unaccrued fees:
         if (protocolFeeAmount != 0) {
             // Withdraw them from the vault.
             vault.withdraw(address(this), protocolFeeAmount);
