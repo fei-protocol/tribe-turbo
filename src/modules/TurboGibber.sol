@@ -23,9 +23,9 @@ contract TurboGibber is Auth {
                               CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Creates a new Turbo Accountant contract.
-    /// @param _owner The owner of the Accountant.
-    /// @param _authority The Authority of the Accountant.
+    /// @notice Creates a new Turbo Clerk contract.
+    /// @param _owner The owner of the Clerk.
+    /// @param _authority The Authority of the Clerk.
     constructor(address _owner, Authority _authority) Auth(_owner, _authority) {}
 
     /*///////////////////////////////////////////////////////////////

@@ -6,17 +6,17 @@ import {Auth, Authority} from "solmate/auth/Auth.sol";
 
 import {TurboSafe} from "../TurboSafe.sol";
 
-/// @title Turbo Accountant
+/// @title Turbo Clerk
 /// @author Transmissions11
 /// @notice Fee determination module for Turbo Safes.
-contract TurboAccountant is Auth {
+contract TurboClerk is Auth {
     /*///////////////////////////////////////////////////////////////
                               CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Creates a new Turbo Accountant contract.
-    /// @param _owner The owner of the Accountant.
-    /// @param _authority The Authority of the Accountant.
+    /// @notice Creates a new Turbo Clerk contract.
+    /// @param _owner The owner of the Clerk.
+    /// @param _authority The Authority of the Clerk.
     constructor(address _owner, Authority _authority) Auth(_owner, _authority) {}
 
     /*///////////////////////////////////////////////////////////////

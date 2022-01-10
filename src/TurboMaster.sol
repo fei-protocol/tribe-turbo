@@ -10,7 +10,7 @@ import {Comptroller} from "./interfaces/Comptroller.sol";
 
 import {TurboGibber} from "./modules/TurboGibber.sol";
 import {TurboBooster} from "./modules/TurboBooster.sol";
-import {TurboAccountant} from "./modules/TurboAccountant.sol";
+import {TurboClerk} from "./modules/TurboClerk.sol";
 
 import {TurboSafe} from "./TurboSafe.sol";
 
@@ -73,23 +73,23 @@ contract TurboMaster is Auth {
     }
 
     /*///////////////////////////////////////////////////////////////
-                            ACCOUNTANT STORAGE
+                             CLERK STORAGE
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice The Accountant module used by the Master and its Safes.
-    TurboAccountant public accountant;
+    /// @notice The Clerk module used by the Master and its Safes.
+    TurboClerk public clerk;
 
-    /// @notice Emitted when the Accountant is updated.
-    /// @param user The user who triggered the update of the Accountant.
-    /// @param newAccountant The new Accountant contract used by the Master.
-    event AccountantUpdated(address indexed user, TurboAccountant newAccountant);
+    /// @notice Emitted when the Clerk is updated.
+    /// @param user The user who triggered the update of the Clerk.
+    /// @param newClerk The new Clerk contract used by the Master.
+    event ClerkUpdated(address indexed user, TurboClerk newClerk);
 
-    /// @notice Update the Accountant used by the Master.
-    /// @param newAccountant The new Accountant contract to be used by the Master.
-    function setAccountant(TurboAccountant newAccountant) external requiresAuth {
-        accountant = newAccountant;
+    /// @notice Update the Clerk used by the Master.
+    /// @param newClerk The new Clerk contract to be used by the Master.
+    function setClerk(TurboClerk newClerk) external requiresAuth {
+        clerk = newClerk;
 
-        emit AccountantUpdated(msg.sender, newAccountant);
+        emit ClerkUpdated(msg.sender, newClerk);
     }
 
     /*///////////////////////////////////////////////////////////////
