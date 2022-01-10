@@ -252,7 +252,7 @@ contract TurboMaster is Auth {
     }
 
     /*///////////////////////////////////////////////////////////////
-                         FEE RECLAMATION LOGIC
+                           FEE CLAIM LOGIC
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Emitted when fees are claimed by an authorized user.
