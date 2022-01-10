@@ -83,7 +83,7 @@ contract TurboSafe is Auth, ERC20, ERC4626 {
         underlyingTurboCToken = pool.cTokensByUnderlying(underlying);
 
         // If the provided underlying is not supported by the Turbo Fuse Pool, revert.
-        if (address(underlyingTurboCToken) == address(0)) revert("UNSUPPORTED_UNDERLYING");
+        require(address(underlyingTurboCToken) != address(0), "UNSUPPORTED_UNDERLYING");
     }
 
     /*///////////////////////////////////////////////////////////////
