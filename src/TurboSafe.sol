@@ -221,7 +221,7 @@ contract TurboSafe is Auth, ERC20, ERC4626 {
         uint256 interestEarned = vault.balanceOfUnderlying(address(this)) - getTotalFeiBoostedForVault[vault];
 
         // Compute what percentage of the interest earned will go back to the
-        uint256 protocolFeePercent = master.clerk().getFeePercentageForSafe(this);
+        uint256 protocolFeePercent = master.clerk().getFeePercentageForSafe(this, underlying);
 
         // Compute the amount of Fei the protocol will retain as fees.
         uint256 protocolFeeAmount = interestEarned.fmul(protocolFeePercent, 1e18);

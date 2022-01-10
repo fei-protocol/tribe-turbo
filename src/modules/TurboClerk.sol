@@ -101,16 +101,14 @@ contract TurboClerk is Auth {
 
     /// @notice Returns the fee on interest taken by the protocol for a Safe.
     /// @param safe The Safe to get the fee percentage for.
+    /// @param collateral The collateral/underlying token of the Safe.
     /// @return The fee percentage for the Safe.
-    function getFeePercentageForSafe(TurboSafe safe) external view returns (uint256) {
+    function getFeePercentageForSafe(TurboSafe safe, ERC20 collateral) external view returns (uint256) {
         // If a custom fee percentage is set for the Safe, return it.
         if (getCustomFeePercentageForSafe[safe] != 0) return getCustomFeePercentageForSafe[safe];
 
-        // Get the Safe's underlying token.
-        ERC20 underlying = safe.underlying();
-
         // Get the custom fee percentage for the collateral type.
-        uint256 customFeePercentageForCollateral = getCustomFeePercentageForCollateral[underlying];
+        uint256 customFeePercentageForCollateral = getCustomFeePercentageForCollateral[collateral];
 
         // If a custom fee percentage is set for the collateral, return it.
         if (customFeePercentageForCollateral != 0) return customFeePercentageForCollateral;
