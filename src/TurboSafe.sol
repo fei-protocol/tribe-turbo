@@ -246,15 +246,16 @@ contract TurboSafe is Auth, ERC20, ERC4626 {
 
     /// @notice Emitted when the Safe is sipped.
     /// @param user The user who sipped the Safe.
+    /// @param to The recipient of the sipped interest.
     /// @param feiAmount The amount of Fei that was sipped.
-    event SafeSipped(address indexed user, uint256 feiAmount);
+    event SafeSipped(address indexed user, address indexed to, uint256 feiAmount);
 
-    /// @notice Claim Fei accrued as fees to the Safe.
+    /// @notice Claim Fei accrued as interest to the Safe.
     /// @param feiAmount The amount of Fei to claim.
-    function sip(uint256 feiAmount) external requiresAuth {
-        emit SafeSipped(msg.sender, feiAmount);
+    function sip(address to, uint256 feiAmount) external requiresAuth {
+        emit SafeSipped(msg.sender, to, feiAmount);
 
-        fei.safeTransfer(msg.sender, feiAmount);
+        fei.safeTransfer(to, feiAmount);
     }
 
     /// @notice Emitted when a Safe is gibbed.
