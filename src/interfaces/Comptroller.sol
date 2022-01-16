@@ -14,9 +14,6 @@ interface Comptroller {
     /// @return The equivalent cToken for the given underlying token.
     function cTokensByUnderlying(ERC20 token) external view returns (CERC20);
 
-    /// @notice Whitelists or blacklists a user from accessing the cTokens in the pool.
-    /// @param users The users to whitelist or blacklist.
-    /// @param enabled Whether to whitelist or blacklist each user.
-    /// @return An error code, or 0 if the update was successful.
-    function _setWhitelistStatuses(address[] calldata users, bool[] calldata enabled) external returns (uint256);
+    /// @notice the admin of the Fuse pool
+    function admin() external view returns (address);
 }

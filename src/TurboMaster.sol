@@ -8,6 +8,7 @@ import {SafeTransferLib} from "solmate-next/utils/SafeTransferLib.sol";
 import {ERC4626} from "solmate-next/mixins/ERC4626.sol";
 
 import {Comptroller} from "./interfaces/Comptroller.sol";
+import {FuseAdmin} from "./interfaces/FuseAdmin.sol";
 
 import {TurboGibber} from "./modules/TurboGibber.sol";
 import {TurboBooster} from "./modules/TurboBooster.sol";
@@ -18,6 +19,7 @@ import {TurboSafe} from "./TurboSafe.sol";
 /// @title Turbo Master
 /// @author Transmissions11
 /// @notice Factory for creating and managing Turbo Safes.
+/// @dev TurboMaster must be an admin of the comptroller's FuseAdmin wrapper
 contract TurboMaster is Auth {
     using SafeTransferLib for ERC20;
 
@@ -201,8 +203,9 @@ contract TurboMaster is Auth {
         bool[] memory enabled = new bool[](1);
         enabled[0] = true;
 
-        // Whitelist the Safe to access the Turbo Fuse Pool, revert if an error is returned.
-        require(pool._setWhitelistStatuses(users, enabled) == 0, "WHITELIST_ERROR");
+        // Whitelist the Safe to access the Turbo Fuse Pool
+        FuseAdmin admin = FuseAdmin(pool.admin());
+        admin._setWhitelistStatuses(users, enabled);
     }
 
     /*///////////////////////////////////////////////////////////////
