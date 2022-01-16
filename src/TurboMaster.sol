@@ -7,8 +7,8 @@ import {SafeTransferLib} from "solmate-next/utils/SafeTransferLib.sol";
 
 import {ERC4626} from "solmate-next/mixins/ERC4626.sol";
 
-import {Comptroller} from "./interfaces/Comptroller.sol";
 import {FuseAdmin} from "./interfaces/FuseAdmin.sol";
+import {Comptroller} from "./interfaces/Comptroller.sol";
 
 import {TurboGibber} from "./modules/TurboGibber.sol";
 import {TurboBooster} from "./modules/TurboBooster.sol";
