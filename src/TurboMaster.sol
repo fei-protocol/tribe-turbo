@@ -19,7 +19,7 @@ import {TurboSafe} from "./TurboSafe.sol";
 /// @title Turbo Master
 /// @author Transmissions11
 /// @notice Factory for creating and managing Turbo Safes.
-/// @dev The Master must be authorized to use the Turbo Fuse Pool's FuseAdmin wrapper.
+/// @dev The Master must be authorized to use the Turbo Fuse Pool's FuseAdmin.
 contract TurboMaster is Auth {
     using SafeTransferLib for ERC20;
 
