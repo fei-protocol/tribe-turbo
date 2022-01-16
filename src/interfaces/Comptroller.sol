@@ -15,6 +15,6 @@ interface Comptroller {
     function cTokensByUnderlying(ERC20 token) external view returns (CERC20);
 
     /// @notice Retrieves the admin of the Comptroller.
-    /// @returns The current administrator of the Comptroller.
+    /// @return The current administrator of the Comptroller.
     function admin() external view returns (address);
 }
