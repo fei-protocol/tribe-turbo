@@ -204,8 +204,7 @@ contract TurboMaster is Auth {
         enabled[0] = true;
 
         // Whitelist the Safe to access the Turbo Fuse Pool
-        FuseAdmin admin = FuseAdmin(pool.admin());
-        admin._setWhitelistStatuses(users, enabled);
+        FuseAdmin(pool.admin())._setWhitelistStatuses(users, enabled);
     }
 
     /*///////////////////////////////////////////////////////////////
