@@ -3,11 +3,25 @@ pragma solidity 0.8.10;
 
 import {TurboMaster} from "./TurboMaster.sol";
 import {TurboSafe} from "./TurboSafe.sol";
-import {AuthLock} from "./authorities/AuthLock.sol";
+import {RouterAuth} from "./authorities/RouterAuth.sol";
 import {ERC20} from "solmate-next/tokens/ERC20.sol";
+import {SafeTransferLib} from "solmate-next/utils/SafeTransferLib.sol";
+
+import {ERC4626} from "solmate-next/mixins/ERC4626.sol";
 import {Auth, Authority} from "solmate-next/auth/Auth.sol";
 
-contract TurboRouter is AuthLock {
+/**
+ @title a router which can perform multiple Turbo actions between Master and the Safes
+ @notice routes custom users flows between actions on the master and safes.
+         Accomodates use cases where the Safe and actions on the created Safe happen in the same transaction.
+         Supported Flows:
+          * creating a safe
+          * Auth methods (set owner/authority)
+          * ERC-4626 methods (deposit/withdraw/mint/redeem)
+          * TurboSafe methods (boost/less/sweep/slurp)
+ */
+contract TurboRouter is RouterAuth {
+    using SafeTransferLib for ERC20;
 
     TurboMaster public immutable master;
 
@@ -58,17 +72,26 @@ contract TurboRouter is AuthLock {
         _safe = safe;
     }
 
-    function setOwner(address newOwner) external authLock(Auth(address(_safe)), msg.sig) {
+    function setOwner(address newOwner) external authenticate(Auth(address(_safe)), msg.sig) {
         _safe.setOwner(newOwner);
     }
 
-    function setAuthority(Authority newAuthority) external authLock(Auth(address(_safe)), msg.sig) {
+    function setAuthority(Authority newAuthority) external authenticate(Auth(address(_safe)), msg.sig) {
         _safe.setAuthority(newAuthority);
     }
 
-    function deposit(address to, uint256 value) external authLock(Auth(address(_safe)), msg.sig) {
+    function deposit(address to, uint256 value) external authenticate(Auth(address(_safe)), msg.sig) {
+        ERC20 underlying = _safe.underlying();
+
+        underlying.safeTransferFrom(msg.sender, address(this), value);
+        underlying.safeApprove(address(_safe), value);
         _safe.deposit(to, value);
     }
+
+    function slurp(ERC4626 vault) external {
+        _safe.slurp(vault);
+    }
+
     // TODO add remaining safe functions
 
     // TODO add https://github.com/Uniswap/v3-periphery/blob/main/contracts/base/SelfPermit.sol

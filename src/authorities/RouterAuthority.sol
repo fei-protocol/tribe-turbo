@@ -3,12 +3,10 @@ pragma solidity 0.8.10;
 
 import {Auth, Authority} from "solmate-next/auth/Auth.sol";
 
-/// @notice Flexible and target agnostic role based Authority that supports up to 256 roles.
-/// @author Solmate (https://github.com/Rari-Capital/solmate/blob/main/src/auth/authorities/MultiRolesAuthority.sol)
+/// @notice An authority which whitelists a router by default
 contract RouterAuthority is Authority {
     
     event TargetCustomAuthorityUpdated(address indexed target, address indexed customAuthority);
-
 
     address immutable router;
 
