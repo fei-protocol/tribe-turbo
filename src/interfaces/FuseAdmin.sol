@@ -2,7 +2,7 @@
 pragma solidity 0.8.10;
 
 /// @title Fuse Admin
-/// @author Fei Labs
+/// @author Fei Protocol
 /// @notice Minimal Fuse Admin interface.
 interface FuseAdmin {
     /// @notice Whitelists or blacklists a user from accessing the cTokens in the pool.
