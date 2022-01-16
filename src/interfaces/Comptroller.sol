@@ -14,6 +14,7 @@ interface Comptroller {
     /// @return The equivalent cToken for the given underlying token.
     function cTokensByUnderlying(ERC20 token) external view returns (CERC20);
 
-    /// @notice the admin of the Fuse pool
+    /// @notice Retrieves the admin of the Comptroller.
+    /// @returns The current administrator of the Comptroller.
     function admin() external view returns (address);
 }
