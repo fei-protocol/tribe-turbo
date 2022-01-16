@@ -203,7 +203,7 @@ contract TurboMaster is Auth {
         bool[] memory enabled = new bool[](1);
         enabled[0] = true;
 
-        // Whitelist the Safe to access the Turbo Fuse Pool
+        // Whitelist the Safe to access the Turbo Fuse Pool.
         FuseAdmin(pool.admin())._setWhitelistStatuses(users, enabled);
     }
 
