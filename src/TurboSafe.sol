@@ -17,7 +17,7 @@ import {TurboMaster} from "./TurboMaster.sol";
 /// @title Turbo Safe (tsToken)
 /// @author Transmissions11
 /// @notice Fuse liquidity accelerator.
-contract TurboSafe is Auth, ERC20, ERC4626 {
+contract TurboSafe is Auth, ERC4626 {
     using LibFuse for CERC20;
     using SafeTransferLib for ERC20;
     using FixedPointMathLib for uint256;
