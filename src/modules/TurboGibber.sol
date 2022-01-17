@@ -6,14 +6,9 @@ import {Auth, Authority} from "solmate-next/auth/Auth.sol";
 
 import {CERC20} from "libcompound/interfaces/CERC20.sol";
 
-import {TurboSafe} from "../TurboSafe.sol";
+import {Fei} from "../interfaces/Fei.sol";
 
-/// @title Fei
-/// @author Fei Protocol
-/// @notice Minimal interface for the Fei token.
-abstract contract Fei is ERC20 {
-    function mint(address to, uint256 amount) external virtual;
-}
+import {TurboSafe} from "../TurboSafe.sol";
 
 /// @title Turbo Gibber
 /// @author Transmissions11
