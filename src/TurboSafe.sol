@@ -133,8 +133,6 @@ contract TurboSafe is Auth, ERC20, ERC4626 {
         // Ensure the vault accepts Fei underlying.
         require(vault.underlying() == fei, "NOT_FEI");
 
-        slurp(vault); // Accrue any fees earned by the vault.
-
         // Call the Master where it will do extra validation
         // and update it's total count of funds used for boosting.
         master.onSafeBoost(vault, feiAmount);
@@ -147,6 +145,8 @@ contract TurboSafe is Auth, ERC20, ERC4626 {
 
         // Increase the boost total proportionately.
         totalFeiBoosted += feiAmount;
+
+        slurp(vault); // Accrue any fees earned by the vault.
 
         emit VaultBoosted(msg.sender, vault, feiAmount);
 
