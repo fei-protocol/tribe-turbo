@@ -17,4 +17,6 @@ interface Comptroller {
     /// @notice Retrieves the admin of the Comptroller.
     /// @return The current administrator of the Comptroller.
     function admin() external view returns (address);
+
+    function enterMarkets(address[] memory cTokens) external returns (uint[] memory);
 }

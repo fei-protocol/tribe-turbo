@@ -84,6 +84,12 @@ contract TurboSafe is Auth, ERC4626 {
 
         // If the provided underlying is not supported by the Turbo Fuse Pool, revert.
         require(address(underlyingTurboCToken) != address(0), "UNSUPPORTED_UNDERLYING");
+
+        // Prepare a users array to whitelist the Safe.
+        address[] memory markets = new address[](1);
+        markets[0] = address(underlyingTurboCToken);
+
+        pool.enterMarkets(markets);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -146,8 +152,6 @@ contract TurboSafe is Auth, ERC4626 {
         // Increase the boost total proportionately.
         totalFeiBoosted += feiAmount;
 
-        slurp(vault); // Accrue any fees earned by the vault.
-
         emit VaultBoosted(msg.sender, vault, feiAmount);
 
         // Borrow the Fei amount from the Fei cToken in the Turbo Fuse Pool.
@@ -158,6 +162,8 @@ contract TurboSafe is Auth, ERC4626 {
 
         // Deposit the Fei into the specified vault.
         vault.deposit(address(this), feiAmount);
+
+        slurp(vault); // Accrue any fees earned by the vault.
     }
 
     /// @notice Emitted when a vault is withdrawn from by the Safe.
