@@ -85,7 +85,7 @@ contract TurboSafe is Auth, ERC4626 {
         // If the provided underlying is not supported by the Turbo Fuse Pool, revert.
         require(address(underlyingTurboCToken) != address(0), "UNSUPPORTED_UNDERLYING");
 
-        // Prepare a users array to whitelist the Safe.
+        // Prepare a users array to enter the underlying market as collateral
         address[] memory markets = new address[](1);
         markets[0] = address(underlyingTurboCToken);
 
