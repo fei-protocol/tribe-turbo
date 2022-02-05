@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.10;
 
-import {ERC20} from "solmate-next/tokens/ERC20.sol";
-import {Auth, Authority} from "solmate-next/auth/Auth.sol";
-import {SafeTransferLib} from "solmate-next/utils/SafeTransferLib.sol";
+import {ERC20} from "solmate/tokens/ERC20.sol";
+import {Auth, Authority} from "solmate/auth/Auth.sol";
+import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 
-import {ERC4626} from "solmate-next/mixins/ERC4626.sol";
+import {ERC4626} from "solmate/mixins/ERC4626.sol";
 
 import {FuseAdmin} from "./interfaces/FuseAdmin.sol";
 import {Comptroller} from "./interfaces/Comptroller.sol";

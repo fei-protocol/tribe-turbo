@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.10;
 
-import {ERC20} from "solmate-next/tokens/ERC20.sol";
-import {Auth, Authority} from "solmate-next/auth/Auth.sol";
+import {ERC20} from "solmate/tokens/ERC20.sol";
+import {Auth, Authority} from "solmate/auth/Auth.sol";
 
 import {CERC20} from "libcompound/interfaces/CERC20.sol";
 
