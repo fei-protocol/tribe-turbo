@@ -254,7 +254,7 @@ contract TurboMaster is Auth {
 
             // Update the total amount of Fei boosted against the collateral type.
             // Cannot overflow because a collateral type's total will never be greater than global total.
-            getTotalBoostedAgainstCollateral[safe.underlying()] = newTotalBoostedAgainstCollateral;
+            getTotalBoostedAgainstCollateral[underlying] = newTotalBoostedAgainstCollateral;
         }
     }
 
