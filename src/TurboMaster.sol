@@ -27,7 +27,7 @@ contract TurboMaster is Auth {
                                IMMUTABLES
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice  The Turbo Fuse Pool the Master and its Safes use.
+    /// @notice The Turbo Fuse Pool the Safes will interact with.
     Comptroller public immutable pool;
 
     /// @notice The Fei token on the network.
@@ -49,6 +49,7 @@ contract TurboMaster is Auth {
         Authority _authority
     ) Auth(_owner, _authority) {
         pool = _pool;
+
         fei = _fei;
 
         // Prevent the first safe from getting id 0.
@@ -243,17 +244,18 @@ contract TurboMaster is Auth {
             "BOOSTER_REJECTED"
         );
 
+        // Update the total amount of Fei being using to boost vaults.
+        totalBoosted += feiAmount;
+
         unchecked {
-            // Update the total amount of Fei being using to boost vaults.
-            // Overflow is safe because it will be caught when updating the total against collateral.
-            totalBoosted += feiAmount;
+            // Update the total amount of Fei being using to boost the vault.
+            // Cannot overflow because a Safe's total will never be greater than global total.
+            getTotalBoostedForVault[vault] = newTotalBoostedForVault;
+
+            // Update the total amount of Fei boosted against the collateral type.
+            // Cannot overflow because a collateral type's total will never be greater than global total.
+            getTotalBoostedAgainstCollateral[safe.underlying()] = newTotalBoostedAgainstCollateral;
         }
-
-        // Update the total amount of Fei being using to boost the vault.
-        getTotalBoostedForVault[vault] = newTotalBoostedForVault;
-
-        // Update the total amount of Fei boosted against the collateral type.
-        getTotalBoostedAgainstCollateral[safe.underlying()] = newTotalBoostedAgainstCollateral;
     }
 
     /// @notice Callback triggered whenever a Safe withdraws from a vault.
