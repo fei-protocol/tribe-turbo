@@ -213,17 +213,19 @@ contract TurboMaster is Auth {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Callback triggered whenever a Safe boosts a vault.
+    /// @param underlying The underlying token of the Safe.
     /// @param vault The vault that was boosted.
     /// @param feiAmount The amount of Fei used to boost the vault.
-    function onSafeBoost(ERC4626 vault, uint256 feiAmount) external {
+    function onSafeBoost(
+        ERC20 underlying,
+        ERC4626 vault,
+        uint256 feiAmount
+    ) external {
         // Get the caller as a Safe instance.
         TurboSafe safe = TurboSafe(msg.sender);
 
         // Ensure the Safe was created by this Master.
         require(getSafeId[safe] != 0, "INVALID_SAFE");
-
-        // Get the Safe's underlying token.
-        ERC20 underlying = safe.underlying();
 
         // Compute the total amount of Fei that will be boosting the vault.
         uint256 newTotalBoostedForVault = getTotalBoostedForVault[vault] + feiAmount;
@@ -259,9 +261,14 @@ contract TurboMaster is Auth {
     }
 
     /// @notice Callback triggered whenever a Safe withdraws from a vault.
+    /// @param underlying The underlying token of the Safe.
     /// @param vault The vault that was withdrawn from.
     /// @param feiAmount The amount of Fei withdrawn from the vault.
-    function onSafeLess(ERC4626 vault, uint256 feiAmount) external {
+    function onSafeLess(
+        ERC20 underlying,
+        ERC4626 vault,
+        uint256 feiAmount
+    ) external {
         // Get the caller as a Safe instance.
         TurboSafe safe = TurboSafe(msg.sender);
 
@@ -279,7 +286,7 @@ contract TurboMaster is Auth {
 
             // Update the total amount of Fei boosted against the collateral type.
             // Cannot underflow as the Safe validated the withdrawal amount previously.
-            getTotalBoostedAgainstCollateral[safe.underlying()] -= feiAmount;
+            getTotalBoostedAgainstCollateral[underlying] -= feiAmount;
         }
     }
 

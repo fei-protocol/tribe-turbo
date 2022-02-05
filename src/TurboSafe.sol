@@ -141,16 +141,16 @@ contract TurboSafe is Auth, ERC4626 {
 
         // Call the Master where it will do extra validation
         // and update it's total count of funds used for boosting.
-        master.onSafeBoost(vault, feiAmount);
-
-        unchecked {
-            // Update the total Fei deposited into the vault proportionately.
-            // Overflow is safe because it will be caught when updating the total.
-            getTotalFeiBoostedForVault[vault] += feiAmount;
-        }
+        master.onSafeBoost(underlying, vault, feiAmount);
 
         // Increase the boost total proportionately.
         totalFeiBoosted += feiAmount;
+
+        unchecked {
+            // Update the total Fei deposited into the vault proportionately.
+            // Cannot overflow because the total cannot be less than a single vault.
+            getTotalFeiBoostedForVault[vault] += feiAmount;
+        }
 
         slurp(vault); // Accrue any fees earned by the vault.
 
@@ -184,7 +184,7 @@ contract TurboSafe is Auth, ERC4626 {
 
         unchecked {
             // Decrease the boost total proportionately.
-            // Cannot underflow because the total cannot be lower than a single vault.
+            // Cannot underflow because the total cannot be less than a single vault.
             totalFeiBoosted -= feiAmount;
         }
 
@@ -207,7 +207,7 @@ contract TurboSafe is Auth, ERC4626 {
         if (feiAmount != 0) require(feiTurboCToken.repayBorrow(feiAmount) == 0, "REPAY_FAILED");
 
         // Call the Master to allow it to update its accounting.
-        master.onSafeLess(vault, feiAmount);
+        master.onSafeLess(underlying, vault, feiAmount);
     }
 
     /// @notice Emitted when a vault is slurped from by the Safe.
@@ -240,14 +240,14 @@ contract TurboSafe is Auth, ERC4626 {
         // Compute the amount of Fei the Safe will retain as interest.
         uint256 safeInterestAmount = interestEarned - protocolFeeAmount;
 
-        unchecked {
-            // Update the total Fei held in the vault proportionately.
-            // Overflow is safe because it will be caught when updating the total.
-            getTotalFeiBoostedForVault[vault] += safeInterestAmount;
-        }
-
         // Increase the boost total proportionately.
         totalFeiBoosted += safeInterestAmount;
+
+        unchecked {
+            // Update the total Fei held in the vault proportionately.
+            // Cannot overflow because the total cannot be less than a single vault.
+            getTotalFeiBoostedForVault[vault] += safeInterestAmount;
+        }
 
         emit VaultSlurped(msg.sender, vault, protocolFeeAmount, safeInterestAmount);
 
