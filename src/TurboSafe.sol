@@ -122,7 +122,7 @@ contract TurboSafe is Auth, ERC4626 {
     }
 
     /*///////////////////////////////////////////////////////////////
-                             SAFE LOGIC
+                           BOOST/LESS LOGIC
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Emitted when a vault is boosted by the Safe.
@@ -152,8 +152,6 @@ contract TurboSafe is Auth, ERC4626 {
             getTotalFeiBoostedForVault[vault] += feiAmount;
         }
 
-        slurp(vault); // Accrue any fees earned by the vault.
-
         emit VaultBoosted(msg.sender, vault, feiAmount);
 
         // Borrow the Fei amount from the Fei cToken in the Turbo Fuse Pool.
@@ -177,8 +175,6 @@ contract TurboSafe is Auth, ERC4626 {
     /// @param feiAmount The amount of Fei to withdraw from the vault and repay in the Turbo Fuse Pool.
     /// @dev Automatically accrues any fees earned by the Safe in the vault to the Master.
     function less(ERC4626 vault, uint256 feiAmount) external requiresAuth {
-        slurp(vault); // Accrue any fees earned by the vault.
-
         // Update the total Fei deposited into the vault proportionately.
         getTotalFeiBoostedForVault[vault] -= feiAmount;
 
@@ -210,6 +206,10 @@ contract TurboSafe is Auth, ERC4626 {
         master.onSafeLess(underlying, vault, feiAmount);
     }
 
+    /*///////////////////////////////////////////////////////////////
+                              SLURP LOGIC
+    //////////////////////////////////////////////////////////////*/
+
     /// @notice Emitted when a vault is slurped from by the Safe.
     /// @param user The user who slurped the vault.
     /// @param vault The vault that was slurped.
@@ -222,9 +222,10 @@ contract TurboSafe is Auth, ERC4626 {
         uint256 safeInterestAmount
     );
 
-    /// @notice Accrue any fees earned by the Safe in the vault to the Master.
-    /// @param vault The vault to accrue fees from and send to the Master.
-    function slurp(ERC4626 vault) public {
+    /// @notice Accrue any interest earned by the Safe in the vault.
+    /// @param vault The vault to accrue interest from, if any.
+    /// @dev Sends a portion of the interest to the Master, as determined by the Clerk.
+    function slurp(ERC4626 vault) external {
         // Ensure the Safe has Fei currently boosting the vault.
         require(getTotalFeiBoostedForVault[vault] != 0, "NO_FEI_BOOSTED");
 
@@ -261,6 +262,10 @@ contract TurboSafe is Auth, ERC4626 {
         }
     }
 
+    /*///////////////////////////////////////////////////////////////
+                              SWEEP LOGIC
+    //////////////////////////////////////////////////////////////*/
+
     /// @notice Emitted a token is sweeped from the Safe.
     /// @param user The user who sweeped the token from the Safe.
     /// @param to The recipient of the sweeped tokens.
@@ -288,6 +293,10 @@ contract TurboSafe is Auth, ERC4626 {
         // Transfer the sweeped tokens to the recipient.
         token.safeTransfer(to, amount);
     }
+
+    /*///////////////////////////////////////////////////////////////
+                               GIB LOGIC
+    //////////////////////////////////////////////////////////////*/
 
     /// @notice Emitted when a Safe is gibbed.
     /// @param user The user who gibbed the Safe.
