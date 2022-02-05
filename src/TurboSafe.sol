@@ -79,6 +79,9 @@ contract TurboSafe is Auth, ERC4626 {
 
         fei = master.fei();
 
+        // An underlying of Fei makes no sense.
+        require(underlying != fei, "INVALID_UNDERLYING");
+
         pool = master.pool();
 
         feiTurboCToken = pool.cTokensByUnderlying(fei);
