@@ -34,10 +34,10 @@ contract TurboSafe is Auth, ERC4626 {
                                SAFE STORAGE
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice The current total amount of Fei the Safe is using to boost vaults.
+    /// @notice The current total amount of Fei the Safe is using to boost Vaults.
     uint256 totalFeiBoosted;
 
-    /// @notice Maps vaults to the total amount of Fei they've being boosted with.
+    /// @notice Maps Vaults to the total amount of Fei they've being boosted with.
     /// @dev Used to determine the fees to be paid back to the Master.
     mapping(ERC4626 => uint256) getTotalFeiBoostedForVault;
 
@@ -125,18 +125,18 @@ contract TurboSafe is Auth, ERC4626 {
                            BOOST/LESS LOGIC
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Emitted when a vault is boosted by the Safe.
-    /// @param user The user who slurped the vault.
-    /// @param vault The vault that was boosted.
-    /// @param feiAmount The amount of Fei that was boosted to the vault.
+    /// @notice Emitted when a Vault is boosted by the Safe.
+    /// @param user The user who slurped the Vault.
+    /// @param vault The Vault that was boosted.
+    /// @param feiAmount The amount of Fei that was boosted to the Vault.
     event VaultBoosted(address indexed user, ERC4626 indexed vault, uint256 feiAmount);
 
-    /// @notice Borrow Fei from the Turbo Fuse Pool and deposit it into an authorized vault.
-    /// @param vault The vault to deposit the borrowed Fei into.
-    /// @param feiAmount The amount of Fei to borrow and supply into the vault.
-    /// @dev Automatically accrues any fees earned by the Safe in the vault to the Master.
+    /// @notice Borrow Fei from the Turbo Fuse Pool and deposit it into an authorized Vault.
+    /// @param vault The Vault to deposit the borrowed Fei into.
+    /// @param feiAmount The amount of Fei to borrow and supply into the Vault.
+    /// @dev Automatically accrues any fees earned by the Safe in the Vault to the Master.
     function boost(ERC4626 vault, uint256 feiAmount) external requiresAuth {
-        // Ensure the vault accepts Fei underlying.
+        // Ensure the Vault accepts Fei underlying.
         require(vault.underlying() == fei, "NOT_FEI");
 
         // Call the Master where it will do extra validation
@@ -147,8 +147,8 @@ contract TurboSafe is Auth, ERC4626 {
         totalFeiBoosted += feiAmount;
 
         unchecked {
-            // Update the total Fei deposited into the vault proportionately.
-            // Cannot overflow because the total cannot be less than a single vault.
+            // Update the total Fei deposited into the Vault proportionately.
+            // Cannot overflow because the total cannot be less than a single Vault.
             getTotalFeiBoostedForVault[vault] += feiAmount;
         }
 
@@ -157,36 +157,36 @@ contract TurboSafe is Auth, ERC4626 {
         // Borrow the Fei amount from the Fei cToken in the Turbo Fuse Pool.
         require(feiTurboCToken.borrow(feiAmount) == 0, "BORROW_FAILED");
 
-        // Approve the borrowed Fei to the specified vault.
+        // Approve the borrowed Fei to the specified Vault.
         fei.safeApprove(address(vault), feiAmount);
 
-        // Deposit the Fei into the specified vault.
+        // Deposit the Fei into the specified Vault.
         vault.deposit(address(this), feiAmount);
     }
 
-    /// @notice Emitted when a vault is withdrawn from by the Safe.
-    /// @param user The user who slurped the vault.
-    /// @param vault The vault that was withdrawn from.
-    /// @param feiAmount The amount of Fei that was withdrawn from the vault.
+    /// @notice Emitted when a Vault is withdrawn from by the Safe.
+    /// @param user The user who slurped the Vault.
+    /// @param vault The Vault that was withdrawn from.
+    /// @param feiAmount The amount of Fei that was withdrawn from the Vault.
     event VaultLessened(address indexed user, ERC4626 indexed vault, uint256 feiAmount);
 
-    /// @notice Withdraw Fei from a deposited vault and use it to repay debt in the Turbo Fuse Pool.
-    /// @param vault The vault to withdraw the Fei from.
-    /// @param feiAmount The amount of Fei to withdraw from the vault and repay in the Turbo Fuse Pool.
-    /// @dev Automatically accrues any fees earned by the Safe in the vault to the Master.
+    /// @notice Withdraw Fei from a deposited Vault and use it to repay debt in the Turbo Fuse Pool.
+    /// @param vault The Vault to withdraw the Fei from.
+    /// @param feiAmount The amount of Fei to withdraw from the Vault and repay in the Turbo Fuse Pool.
+    /// @dev Automatically accrues any fees earned by the Safe in the Vault to the Master.
     function less(ERC4626 vault, uint256 feiAmount) external requiresAuth {
-        // Update the total Fei deposited into the vault proportionately.
+        // Update the total Fei deposited into the Vault proportionately.
         getTotalFeiBoostedForVault[vault] -= feiAmount;
 
         unchecked {
             // Decrease the boost total proportionately.
-            // Cannot underflow because the total cannot be less than a single vault.
+            // Cannot underflow because the total cannot be less than a single Vault.
             totalFeiBoosted -= feiAmount;
         }
 
         emit VaultLessened(msg.sender, vault, feiAmount);
 
-        // Withdraw the specified amount of Fei from the vault.
+        // Withdraw the specified amount of Fei from the Vault.
         vault.withdraw(address(this), feiAmount);
 
         // Approve the specified amount of Fei to Fei cToken in the Turbo Fuse Pool.
@@ -210,9 +210,9 @@ contract TurboSafe is Auth, ERC4626 {
                               SLURP LOGIC
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Emitted when a vault is slurped from by the Safe.
-    /// @param user The user who slurped the vault.
-    /// @param vault The vault that was slurped.
+    /// @notice Emitted when a Vault is slurped from by the Safe.
+    /// @param user The user who slurped the Vault.
+    /// @param vault The Vault that was slurped.
     /// @param protocolFeeAmount The amount of Fei accrued as fees to the Master.
     /// @param safeInterestAmount The amount of Fei accrued as interest to the Safe.
     event VaultSlurped(
@@ -222,14 +222,14 @@ contract TurboSafe is Auth, ERC4626 {
         uint256 safeInterestAmount
     );
 
-    /// @notice Accrue any interest earned by the Safe in the vault.
-    /// @param vault The vault to accrue interest from, if any.
+    /// @notice Accrue any interest earned by the Safe in the Vault.
+    /// @param vault The Vault to accrue interest from, if any.
     /// @dev Sends a portion of the interest to the Master, as determined by the Clerk.
     function slurp(ERC4626 vault) external {
-        // Ensure the Safe has Fei currently boosting the vault.
+        // Ensure the Safe has Fei currently boosting the Vault.
         require(getTotalFeiBoostedForVault[vault] != 0, "NO_FEI_BOOSTED");
 
-        // Compute the amount of Fei interest the Safe generated by boosting the vault.
+        // Compute the amount of Fei interest the Safe generated by boosting the Vault.
         uint256 interestEarned = vault.balanceOfUnderlying(address(this)) - getTotalFeiBoostedForVault[vault];
 
         // Compute what percentage of the interest earned will go back to the
@@ -245,8 +245,8 @@ contract TurboSafe is Auth, ERC4626 {
         totalFeiBoosted += safeInterestAmount;
 
         unchecked {
-            // Update the total Fei held in the vault proportionately.
-            // Cannot overflow because the total cannot be less than a single vault.
+            // Update the total Fei held in the Vault proportionately.
+            // Cannot overflow because the total cannot be less than a single Vault.
             getTotalFeiBoostedForVault[vault] += safeInterestAmount;
         }
 
@@ -254,7 +254,7 @@ contract TurboSafe is Auth, ERC4626 {
 
         // If we have unaccrued fees:
         if (protocolFeeAmount != 0) {
-            // Withdraw them from the vault.
+            // Withdraw them from the Vault.
             vault.withdraw(address(this), protocolFeeAmount);
 
             // Transfer the fees owed as Fei to the Master.
@@ -281,7 +281,7 @@ contract TurboSafe is Auth, ERC4626 {
         ERC20 token,
         uint256 amount
     ) external requiresAuth {
-        // Ensure the caller is not trying to steal vault shares or collateral cTokens.
+        // Ensure the caller is not trying to steal Vault shares or collateral cTokens.
         require(
             getTotalFeiBoostedForVault[ERC4626(address(token))] == 0 &&
                 address(token) != address(underlyingTurboCToken),

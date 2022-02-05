@@ -141,13 +141,13 @@ contract TurboMaster is Auth {
                              SAFE STORAGE
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice The total Fei currently boosting vaults.
+    /// @notice The total Fei currently boosting Vaults.
     uint256 public totalBoosted;
 
     /// @notice Maps Safe addresses to the id they are stored under in the safes array.
     mapping(TurboSafe => uint256) public getSafeId;
 
-    /// @notice Maps vault addresses to the total amount of Fei they've being boosted with.
+    /// @notice Maps Vault addresses to the total amount of Fei they've being boosted with.
     mapping(ERC4626 => uint256) public getTotalBoostedForVault;
 
     /// @notice Maps collateral types to the total amount of Fei boosted by Safes using it as collateral.
@@ -212,10 +212,10 @@ contract TurboMaster is Auth {
                           SAFE CALLBACK LOGIC
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Callback triggered whenever a Safe boosts a vault.
+    /// @notice Callback triggered whenever a Safe boosts a Vault.
     /// @param underlying The underlying token of the Safe.
-    /// @param vault The vault that was boosted.
-    /// @param feiAmount The amount of Fei used to boost the vault.
+    /// @param vault The Vault that was boosted.
+    /// @param feiAmount The amount of Fei used to boost the Vault.
     function onSafeBoost(
         ERC20 underlying,
         ERC4626 vault,
@@ -227,13 +227,13 @@ contract TurboMaster is Auth {
         // Ensure the Safe was created by this Master.
         require(getSafeId[safe] != 0, "INVALID_SAFE");
 
-        // Compute the total amount of Fei that will be boosting the vault.
+        // Compute the total amount of Fei that will be boosting the Vault.
         uint256 newTotalBoostedForVault = getTotalBoostedForVault[vault] + feiAmount;
 
         // Compute the total amount of Fei boosted that will be boosted the Safe's collateral type.
         uint256 newTotalBoostedAgainstCollateral = getTotalBoostedAgainstCollateral[underlying] + feiAmount;
 
-        // Check with the booster that the Safe is allowed to boost the vault using this amount of Fei.
+        // Check with the booster that the Safe is allowed to boost the Vault using this amount of Fei.
         require(
             booster.canSafeBoostVault(
                 safe,
@@ -246,11 +246,11 @@ contract TurboMaster is Auth {
             "BOOSTER_REJECTED"
         );
 
-        // Update the total amount of Fei being using to boost vaults.
+        // Update the total amount of Fei being using to boost Vaults.
         totalBoosted += feiAmount;
 
         unchecked {
-            // Update the total amount of Fei being using to boost the vault.
+            // Update the total amount of Fei being using to boost the Vault.
             // Cannot overflow because a Safe's total will never be greater than global total.
             getTotalBoostedForVault[vault] = newTotalBoostedForVault;
 
@@ -260,10 +260,10 @@ contract TurboMaster is Auth {
         }
     }
 
-    /// @notice Callback triggered whenever a Safe withdraws from a vault.
+    /// @notice Callback triggered whenever a Safe withdraws from a Vault.
     /// @param underlying The underlying token of the Safe.
-    /// @param vault The vault that was withdrawn from.
-    /// @param feiAmount The amount of Fei withdrawn from the vault.
+    /// @param vault The Vault that was withdrawn from.
+    /// @param feiAmount The amount of Fei withdrawn from the Vault.
     function onSafeLess(
         ERC20 underlying,
         ERC4626 vault,
@@ -276,11 +276,11 @@ contract TurboMaster is Auth {
         require(getSafeId[safe] != 0, "INVALID_SAFE");
 
         unchecked {
-            // Update the total amount of Fei being using to boost the vault.
+            // Update the total amount of Fei being using to boost the Vault.
             // Cannot underflow as the Safe validated the withdrawal amount before.
             getTotalBoostedForVault[vault] -= feiAmount;
 
-            // Update the total amount of Fei being using to boost vaults.
+            // Update the total amount of Fei being using to boost Vaults.
             // Cannot underflow as the Safe validated the withdrawal amount earlier.
             totalBoosted -= feiAmount;
 
