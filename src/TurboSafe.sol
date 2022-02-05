@@ -47,10 +47,10 @@ contract TurboSafe is Auth, ERC4626 {
     /// @notice The Turbo Fuse Pool contract that collateral is held in and Fei is borrowed from.
     Comptroller public immutable pool;
 
-    /// @notice The Fei cToken in the Turbo Fuse Pool that is borrowed from
+    /// @notice The Fei cToken in the Turbo Fuse Pool that Fei is borrowed from.
     CERC20 public immutable feiTurboCToken;
 
-    /// @notice The vault that accepts the underlying token in the Turbo Fuse Pool.
+    /// @notice The cToken that accepts the underlying token in the Turbo Fuse Pool.
     CERC20 public immutable underlyingTurboCToken;
 
     /*///////////////////////////////////////////////////////////////
@@ -78,8 +78,11 @@ contract TurboSafe is Auth, ERC4626 {
         master = TurboMaster(msg.sender);
 
         fei = master.fei();
+
         pool = master.pool();
+
         feiTurboCToken = pool.cTokensByUnderlying(fei);
+
         underlyingTurboCToken = pool.cTokensByUnderlying(underlying);
 
         // If the provided underlying is not supported by the Turbo Fuse Pool, revert.
