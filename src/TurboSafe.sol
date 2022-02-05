@@ -197,8 +197,8 @@ contract TurboSafe is Auth, ERC4626 {
         // The surplus Fei will accrue as fees and can be sweeped.
         if (feiAmount > feiDebt) feiAmount = feiDebt;
 
-        // Repay the specified amount of Fei in the Turbo Fuse Pool.
-        require(feiTurboCToken.repayBorrow(feiAmount) == 0, "REPAY_FAILED");
+        // Repay Fei debt in the Turbo Fuse Pool, unless we would repay nothing.
+        if (feiAmount != 0) require(feiTurboCToken.repayBorrow(feiAmount) == 0, "REPAY_FAILED");
 
         // Call the Master to allow it to update its accounting.
         master.onSafeLess(vault, feiAmount);
