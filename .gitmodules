@@ -4,3 +4,6 @@
 [submodule "lib/libcompound"]
 	path = lib/libcompound
 	url = https://github.com/transmissions11/libcompound
+[submodule "lib/solmate"]
+	path = lib/solmate
+	url = https://github.com/rari-capital/solmate
