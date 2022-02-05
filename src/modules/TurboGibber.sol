@@ -9,6 +9,7 @@ import {CERC20} from "libcompound/interfaces/CERC20.sol";
 import {Fei} from "../interfaces/Fei.sol";
 
 import {TurboSafe} from "../TurboSafe.sol";
+import {TurboMaster} from "../TurboMaster.sol";
 
 /// @title Turbo Gibber
 /// @author Transmissions11
@@ -18,10 +19,31 @@ contract TurboGibber is Auth {
                               CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice The Master contract.
+    /// @dev Used to validate Safes are legitimate.
+    TurboMaster public immutable master;
+
+    /// @notice The Fei token on the network.
+    Fei public immutable fei;
+
+    /// @notice The Fei cToken in the Turbo Fuse Pool.
+    CERC20 public immutable feiTurboCToken;
+
     /// @notice Creates a new Turbo Clerk contract.
+    /// @param _master The Master of the Clerk.
     /// @param _owner The owner of the Clerk.
     /// @param _authority The Authority of the Clerk.
-    constructor(address _owner, Authority _authority) Auth(_owner, _authority) {}
+    constructor(
+        TurboMaster _master,
+        address _owner,
+        Authority _authority
+    ) Auth(_owner, _authority) {
+        master = _master;
+
+        fei = Fei(address(master.fei()));
+
+        feiTurboCToken = master.pool().cTokensByUnderlying(fei);
+    }
 
     /*///////////////////////////////////////////////////////////////
                           ATOMIC IMPOUND LOGIC
@@ -45,11 +67,8 @@ contract TurboGibber is Auth {
         uint256 underlyingAmount,
         address to
     ) external requiresAuth {
-        // Get the Fei token the Safe uses.
-        Fei fei = Fei(address(safe.fei()));
-
-        // Get Fei's cToken in the Turbo Fuse Pool.
-        CERC20 feiCToken = safe.feiTurboCToken();
+        // Ensure the Safe is registered with the Master.
+        require(master.getSafeId(safe) != 0);
 
         emit ImpoundExecuted(msg.sender, safe, feiAmount, underlyingAmount);
 
@@ -57,10 +76,10 @@ contract TurboGibber is Auth {
         fei.mint(address(this), feiAmount);
 
         // Approve the Fei amount to the Fei cToken.
-        fei.approve(address(feiCToken), feiAmount);
+        fei.approve(address(feiTurboCToken), feiAmount);
 
-        // Repay the safe's Fei debt with the minted Fei.
-        feiCToken.repayBorrowBehalf(address(safe), feiAmount);
+        // Repay the safe's Fei debt with the minted Fei, ensuring to catch cToken errors.
+        require(feiTurboCToken.repayBorrowBehalf(address(safe), feiAmount) == 0, "REPAY_FAILED");
 
         // Impound some of the safe's collateral and send it to the chosen recipient.
         safe.gib(to, underlyingAmount);
@@ -70,11 +89,8 @@ contract TurboGibber is Auth {
     /// @param safe The Safe to be impounded.
     /// @param to The recipient of the impounded collateral tokens.
     function impoundAll(TurboSafe safe, address to) external requiresAuth {
-        // Get the Fei token the Safe uses.
-        Fei fei = Fei(address(safe.fei()));
-
-        // Get Fei's cToken in the Turbo Fuse Pool.
-        CERC20 feiCToken = safe.feiTurboCToken();
+        // Ensure the Safe is registered with the Master.
+        require(master.getSafeId(safe) != 0);
 
         // Get the underlying cToken in the Turbo Fuse Pool.
         CERC20 underlyingCToken = safe.underlyingTurboCToken();
@@ -91,10 +107,10 @@ contract TurboGibber is Auth {
         fei.mint(address(this), feiAmount);
 
         // Approve the Fei amount to the Fei cToken.
-        fei.approve(address(feiCToken), feiAmount);
+        fei.approve(address(feiTurboCToken), feiAmount);
 
-        // Repay the safe's Fei debt with the minted Fei.
-        feiCToken.repayBorrowBehalf(address(safe), feiAmount);
+        // Repay the safe's Fei debt with the minted Fei, ensuring to catch cToken errors.
+        require(feiTurboCToken.repayBorrowBehalf(address(safe), feiAmount) == 0, "REPAY_FAILED");
 
         // Impound all of the safe's collateral and send it to the chosen recipient.
         safe.gib(to, underlyingAmount);
