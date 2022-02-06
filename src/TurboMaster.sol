@@ -291,20 +291,27 @@ contract TurboMaster is Auth {
     }
 
     /*///////////////////////////////////////////////////////////////
-                           FEE CLAIM LOGIC
+                              SWEEP LOGIC
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Emitted when fees are claimed by an authorized user.
-    /// @param user The authorized user who claimed the fees.
-    /// @param feiAmount The amount of Fei fees that were claimed.
-    event FeesClaimed(address indexed user, uint256 feiAmount);
+    /// @notice Emitted a token is sweeped from the Master.
+    /// @param user The user who sweeped the token from the Master.
+    /// @param to The recipient of the sweeped tokens.
+    /// @param amount The amount of the token that was sweeped.
+    event TokenSweeped(address indexed user, address indexed to, ERC20 indexed token, uint256 amount);
 
-    /// @notice Claims the fees generated as Fei sent to the Master.
-    /// @param feiAmount The amount of Fei fees that should be claimed.
-    function claimFees(uint256 feiAmount) external requiresAuth {
-        emit FeesClaimed(msg.sender, feiAmount);
+    /// @notice Claim tokens sitting idly in the Master.
+    /// @param to The recipient of the sweeped tokens.
+    /// @param token The token to sweep and send.
+    /// @param amount The amount of the token to sweep.
+    function sweep(
+        address to,
+        ERC20 token,
+        uint256 amount
+    ) external requiresAuth {
+        emit TokenSweeped(msg.sender, to, token, amount);
 
-        // Transfer the Fei fees to the authorized caller.
-        fei.safeTransfer(msg.sender, feiAmount);
+        // Transfer the sweeped tokens to the recipient.
+        token.safeTransfer(to, amount);
     }
 }
