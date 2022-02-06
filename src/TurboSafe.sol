@@ -90,6 +90,13 @@ contract TurboSafe is Auth, ERC4626 {
 
         // If the provided underlying is not supported by the Turbo Fuse Pool, revert.
         require(address(underlyingTurboCToken) != address(0), "UNSUPPORTED_UNDERLYING");
+
+        // Construct an array of market(s) to enable as collateral.
+        CERC20[] memory marketsToEnter = new CERC20[](1);
+        marketsToEnter[0] = underlyingTurboCToken;
+
+        // Enter the market(s) and ensure to properly revert if there is an error.
+        require(pool.enterMarkets(marketsToEnter)[0] == 0, "ENTER_MARKETS_FAILED");
     }
 
     /*///////////////////////////////////////////////////////////////
