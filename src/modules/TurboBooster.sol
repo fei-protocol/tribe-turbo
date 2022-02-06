@@ -108,7 +108,7 @@ contract TurboBooster is Auth {
     ) external view returns (bool) {
         return
             !frozen &&
-            getBoostCapForVault[vault] > newTotalBoostedForVault &&
-            getBoostCapForCollateral[collateral] > newTotalBoostedAgainstCollateral;
+            getBoostCapForVault[vault] >= newTotalBoostedForVault &&
+            getBoostCapForCollateral[collateral] >= newTotalBoostedAgainstCollateral;
     }
 }
