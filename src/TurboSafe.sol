@@ -27,7 +27,7 @@ contract TurboSafe is Auth, ERC4626 {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice The Master contract that created the Safe.
-    /// @dev Used to access the current Custodian and send fees.
+    /// @dev Fees are paid directly to the Master, where they can be swept.
     TurboMaster public immutable master;
 
     /*///////////////////////////////////////////////////////////////
@@ -35,11 +35,11 @@ contract TurboSafe is Auth, ERC4626 {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice The current total amount of Fei the Safe is using to boost Vaults.
-    uint256 totalFeiBoosted;
+    uint256 public totalFeiBoosted;
 
     /// @notice Maps Vaults to the total amount of Fei they've being boosted with.
     /// @dev Used to determine the fees to be paid back to the Master.
-    mapping(ERC4626 => uint256) getTotalFeiBoostedForVault;
+    mapping(ERC4626 => uint256) public getTotalFeiBoostedForVault;
 
     /// @notice The Fei token on the network.
     ERC20 public immutable fei;
@@ -307,7 +307,7 @@ contract TurboSafe is Auth, ERC4626 {
     /// @notice Impound a specific amount of a Safe's collateral.
     /// @param to The address to send the impounded collateral to.
     /// @param underlyingAmount The amount of the underlying to impound.
-    /// @dev Requires special authorization from the Custodian.
+    /// @dev Can only be called by the Gibber, not by the Safe owner.
     /// @dev Debt must be repaid in advance, or the redemption will fail.
     function gib(address to, uint256 underlyingAmount) external {
         // Ensure the caller is the Master's current Gibber.
