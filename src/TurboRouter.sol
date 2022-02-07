@@ -3,12 +3,15 @@ pragma solidity 0.8.10;
 
 import {TurboMaster} from "./TurboMaster.sol";
 import {TurboSafe} from "./TurboSafe.sol";
-import {RouterAuth} from "./authorities/RouterAuth.sol";
-import {ERC20} from "solmate-next/tokens/ERC20.sol";
-import {SafeTransferLib} from "solmate-next/utils/SafeTransferLib.sol";
 
-import {ERC4626} from "solmate-next/mixins/ERC4626.sol";
-import {Auth, Authority} from "solmate-next/auth/Auth.sol";
+import {ENSReverseRecord} from "ERC4626/ens/ENSReverseRecord.sol";
+import {IERC4626, ERC4626RouterBase, IWETH9, PeripheryPayments} from "ERC4626/ERC4626RouterBase.sol";
+
+import {ERC20} from "solmate/tokens/ERC20.sol";
+import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
+
+import {ERC4626} from "solmate/mixins/ERC4626.sol";
+import {Auth, Authority} from "solmate/auth/Auth.sol";
 
 /**
  @title a router which can perform multiple Turbo actions between Master and the Safes
@@ -20,79 +23,107 @@ import {Auth, Authority} from "solmate-next/auth/Auth.sol";
           * ERC-4626 methods (deposit/withdraw/mint/redeem)
           * TurboSafe methods (boost/less/sweep/slurp)
  */
-contract TurboRouter is RouterAuth {
+contract TurboRouter is ERC4626RouterBase, ENSReverseRecord {
     using SafeTransferLib for ERC20;
 
     TurboMaster public immutable master;
 
-    uint256 private constant _NOT_IN_MULTICALL = 0;
-    uint256 private constant _IN_MULTICALL = 1;
-
-    uint256 private _multicallStatus;
-
-    TurboSafe private _safe;
-
-    constructor (TurboMaster _master) {
+    constructor (TurboMaster _master, string memory name, IWETH9 weth) ENSReverseRecord(name) PeripheryPayments(weth) {
         master = _master;
     }
 
-    function multicall(bytes[] calldata data) external payable returns (bytes[] memory results) {
-        require(_multicallStatus == _NOT_IN_MULTICALL, "already in multicall");
-        _multicallStatus = _IN_MULTICALL;
+    modifier authenticate(Auth target, bytes4 sig) {
+        Authority auth = target.authority();
 
-        results = new bytes[](data.length);
-        for (uint256 i = 0; i < data.length; i++) {
-            (bool success, bytes memory result) = address(this).delegatecall(data[i]);
+        require((address(auth) != address(0) && auth.canCall(msg.sender, address(target), sig)) || msg.sender == target.owner(), "not authed");
 
-            if (!success) {
-                // Next 5 lines from https://ethereum.stackexchange.com/a/83577
-                if (result.length < 68) revert();
-                assembly {
-                    result := add(result, 0x04)
-                }
-                revert(abi.decode(result, (string)));
-            }
-
-            results[i] = result;
-        }
-
-        _multicallStatus = _NOT_IN_MULTICALL;
-        _safe = TurboSafe(address(0));
+        _;
     }
 
-    function setSafe(TurboSafe safe) external {
-        require(_multicallStatus == _IN_MULTICALL, "not in multicall");
-        _safe = safe;
-    }
-
-    function createSafe(ERC20 underlying) external {
-        require(_multicallStatus == _IN_MULTICALL, "not in multicall");
+    function createSafeAndDeposit(ERC20 underlying) external {
         (TurboSafe safe, ) = master.createSafe(underlying);
 
-        _safe = safe;
+        safe.setOwner(msg.sender);
     }
 
-    function setOwner(address newOwner) external authenticate(Auth(address(_safe)), msg.sig) {
-        _safe.setOwner(newOwner);
+    function deposit(IERC4626 safe, address to, uint256 amount, uint256 minSharesOut) 
+        public 
+        payable 
+        override 
+        authenticate(Auth(address(safe)), IERC4626.deposit.selector) 
+        returns (uint256) 
+    {
+        return super.deposit(safe, to, amount, minSharesOut);
     }
 
-    function setAuthority(Authority newAuthority) external authenticate(Auth(address(_safe)), msg.sig) {
-        _safe.setAuthority(newAuthority);
+    function mint(IERC4626 safe, address to, uint256 shares, uint256 maxAmountIn) 
+        public 
+        payable 
+        override 
+        authenticate(Auth(address(safe)), IERC4626.mint.selector) 
+        returns (uint256) 
+    {
+        return super.mint(safe, to, shares, maxAmountIn);
     }
 
-    function deposit(address to, uint256 value) external authenticate(Auth(address(_safe)), msg.sig) {
-        ERC20 underlying = _safe.underlying();
-
-        underlying.safeTransferFrom(msg.sender, address(this), value);
-        underlying.safeApprove(address(_safe), value);
-        _safe.deposit(to, value);
+    function withdraw(IERC4626 safe, address to, uint256 amount, uint256 minSharesOut) 
+        public 
+        payable 
+        override 
+        authenticate(Auth(address(safe)), IERC4626.withdraw.selector) 
+        returns (uint256) 
+    {
+        return super.withdraw(safe, to, amount, minSharesOut);
     }
 
-    function slurp(ERC4626 vault) external {
-        _safe.slurp(vault);
+    function redeem(IERC4626 safe, address to, uint256 shares, uint256 minAmountOut) 
+        public 
+        payable 
+        override 
+        authenticate(Auth(address(safe)), IERC4626.redeem.selector) 
+        returns (uint256) 
+    {
+        return super.redeem(safe, to, shares, minAmountOut);
     }
 
-    // TODO add remaining safe functions
+    function slurp(TurboSafe safe, ERC4626 vault) external {
+        safe.slurp(vault);
+    }
 
-    // TODO add https://github.com/Uniswap/v3-periphery/blob/main/contracts/base/SelfPermit.sol
+    function boost(TurboSafe safe, ERC4626 vault, uint256 feiAmount) external authenticate(Auth(address(safe)), TurboSafe.boost.selector) {
+        safe.boost(vault, feiAmount);
+    }
+
+    function less(TurboSafe safe, ERC4626 vault, uint256 feiAmount) external authenticate(Auth(address(safe)), TurboSafe.less.selector) {
+        safe.less(vault, feiAmount);
+    }
+
+    function sweep(TurboSafe safe, address to, ERC20 token, uint256 amount) external authenticate(Auth(address(safe)), TurboSafe.sweep.selector) {
+        safe.sweep(to, token, amount);
+    }
+
+    // TODO cleanup IERC4626 router so we don't need to add the below functions
+    function depositToVault(
+        IERC4626 vault,
+        address to,
+        uint256 amount,
+        uint256 minSharesOut
+    ) external payable returns (uint256 sharesOut) {}
+
+    function withdrawToDeposit(
+        IERC4626 fromVault,
+        IERC4626 toVault,
+        address to,
+        uint256 amount,
+        uint256 minSharesOut
+    ) external payable returns (uint256 sharesOut) {}
+
+    function redeemToDeposit(
+        IERC4626 fromVault,
+        IERC4626 toVault,
+        address to,
+        uint256 shares,
+        uint256 minSharesOut
+    ) external payable returns (uint256 sharesOut) {}
+
 }
