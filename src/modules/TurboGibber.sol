@@ -3,6 +3,7 @@ pragma solidity 0.8.10;
 
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {Auth, Authority} from "solmate/auth/Auth.sol";
+import {ReentrancyGuard} from "solmate/utils/ReentrancyGuard.sol";
 
 import {CERC20} from "libcompound/interfaces/CERC20.sol";
 
@@ -14,7 +15,7 @@ import {TurboMaster} from "../TurboMaster.sol";
 /// @title Turbo Gibber
 /// @author Transmissions11
 /// @notice Atomic impounder module.
-contract TurboGibber is Auth {
+contract TurboGibber is Auth, ReentrancyGuard {
     /*///////////////////////////////////////////////////////////////
                                IMMUTABLES
     //////////////////////////////////////////////////////////////*/
@@ -70,7 +71,7 @@ contract TurboGibber is Auth {
         uint256 feiAmount,
         uint256 underlyingAmount,
         address to
-    ) external requiresAuth {
+    ) external requiresAuth nonReentrant {
         // Ensure the Safe is registered with the Master.
         require(master.getSafeId(safe) != 0);
 
@@ -92,7 +93,7 @@ contract TurboGibber is Auth {
     /// @notice Impound all of a safe's collateral.
     /// @param safe The Safe to be impounded.
     /// @param to The recipient of the impounded collateral tokens.
-    function impoundAll(TurboSafe safe, address to) external requiresAuth {
+    function impoundAll(TurboSafe safe, address to) external requiresAuth nonReentrant {
         // Ensure the Safe is registered with the Master.
         require(master.getSafeId(safe) != 0);
 
