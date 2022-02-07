@@ -40,10 +40,29 @@ contract TurboRouter is ERC4626RouterBase, ENSReverseRecord {
         _;
     }
 
-    function createSafeAndDeposit(ERC20 underlying) external {
+    function createSafeAndDeposit(ERC20 underlying, address to, uint256 amount, uint256 minSharesOut) external {
         (TurboSafe safe, ) = master.createSafe(underlying);
 
         safe.setOwner(msg.sender);
+
+        deposit(IERC4626(address(safe)), to, amount, minSharesOut);
+    }
+
+    function createSafeAndDepositAndBoost(
+        ERC20 underlying, 
+        address to, 
+        uint256 amount, 
+        uint256 minSharesOut, 
+        ERC4626 boostedVault, 
+        uint256 boostedFeiAmount
+    ) public {
+        (TurboSafe safe, ) = master.createSafe(underlying);
+
+        safe.setOwner(msg.sender);
+
+        deposit(IERC4626(address(safe)), to, amount, minSharesOut);
+
+        boost(safe, boostedVault, boostedFeiAmount);
     }
 
     function deposit(IERC4626 safe, address to, uint256 amount, uint256 minSharesOut) 
@@ -90,7 +109,7 @@ contract TurboRouter is ERC4626RouterBase, ENSReverseRecord {
         safe.slurp(vault);
     }
 
-    function boost(TurboSafe safe, ERC4626 vault, uint256 feiAmount) external authenticate(Auth(address(safe)), TurboSafe.boost.selector) {
+    function boost(TurboSafe safe, ERC4626 vault, uint256 feiAmount) public authenticate(Auth(address(safe)), TurboSafe.boost.selector) {
         safe.boost(vault, feiAmount);
     }
 
