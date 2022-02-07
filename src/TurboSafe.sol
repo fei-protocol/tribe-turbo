@@ -284,8 +284,7 @@ contract TurboSafe is Auth, ERC4626 {
     ) external requiresAuth {
         // Ensure the caller is not trying to steal Vault shares or collateral cTokens.
         require(
-            getTotalFeiBoostedForVault[ERC4626(address(token))] == 0 &&
-                address(token) != address(underlyingTurboCToken),
+            getTotalFeiBoostedForVault[ERC4626(address(token))] == 0 && token != underlyingTurboCToken,
             "INVALID_TOKEN"
         );
 
