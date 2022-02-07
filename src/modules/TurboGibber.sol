@@ -16,7 +16,7 @@ import {TurboMaster} from "../TurboMaster.sol";
 /// @notice Atomic impounder module.
 contract TurboGibber is Auth {
     /*///////////////////////////////////////////////////////////////
-                              CONSTRUCTOR
+                               IMMUTABLES
     //////////////////////////////////////////////////////////////*/
 
     /// @notice The Master contract.
@@ -29,10 +29,14 @@ contract TurboGibber is Auth {
     /// @notice The Fei cToken in the Turbo Fuse Pool.
     CERC20 public immutable feiTurboCToken;
 
-    /// @notice Creates a new Turbo Clerk contract.
-    /// @param _master The Master of the Clerk.
-    /// @param _owner The owner of the Clerk.
-    /// @param _authority The Authority of the Clerk.
+    /*///////////////////////////////////////////////////////////////
+                              CONSTRUCTOR
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice Creates a new Turbo Gibber contract.
+    /// @param _master The Master of the Gibber.
+    /// @param _owner The owner of the Gibber.
+    /// @param _authority The Authority of the Gibber.
     constructor(
         TurboMaster _master,
         address _owner,

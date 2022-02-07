@@ -23,23 +23,12 @@ contract TurboSafe is Auth, ERC4626 {
     using FixedPointMathLib for uint256;
 
     /*///////////////////////////////////////////////////////////////
-                          TURBO MASTER STORAGE
+                               IMMUTABLES
     //////////////////////////////////////////////////////////////*/
 
     /// @notice The Master contract that created the Safe.
     /// @dev Fees are paid directly to the Master, where they can be swept.
     TurboMaster public immutable master;
-
-    /*///////////////////////////////////////////////////////////////
-                               SAFE STORAGE
-    //////////////////////////////////////////////////////////////*/
-
-    /// @notice The current total amount of Fei the Safe is using to boost Vaults.
-    uint256 public totalFeiBoosted;
-
-    /// @notice Maps Vaults to the total amount of Fei they've being boosted with.
-    /// @dev Used to determine the fees to be paid back to the Master.
-    mapping(ERC4626 => uint256) public getTotalFeiBoostedForVault;
 
     /// @notice The Fei token on the network.
     ERC20 public immutable fei;
@@ -98,6 +87,17 @@ contract TurboSafe is Auth, ERC4626 {
         // Enter the market(s) and ensure to properly revert if there is an error.
         require(pool.enterMarkets(marketsToEnter)[0] == 0, "ENTER_MARKETS_FAILED");
     }
+
+    /*///////////////////////////////////////////////////////////////
+                               SAFE STORAGE
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice The current total amount of Fei the Safe is using to boost Vaults.
+    uint256 public totalFeiBoosted;
+
+    /// @notice Maps Vaults to the total amount of Fei they've being boosted with.
+    /// @dev Used to determine the fees to be paid back to the Master.
+    mapping(ERC4626 => uint256) public getTotalFeiBoostedForVault;
 
     /*///////////////////////////////////////////////////////////////
                              ERC4626 LOGIC
