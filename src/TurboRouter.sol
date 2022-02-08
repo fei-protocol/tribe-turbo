@@ -18,6 +18,12 @@ import {Auth, Authority} from "solmate/auth/Auth.sol";
  @notice routes custom users flows between actions on the master and safes.
 
  Extends the ERC4626RouterBase to allow for flexible combinations of actions involving ERC4626 and permit, weth, and Turbo specific actions.
+
+ Safe Creation has functions bundled with deposit (and optionally boost) because a newly created Safe address can only be known at runtime. 
+ The caller is always atomically given the owner role of a new safe.
+
+ Authentication requires the caller to be the owner of the Safe to perform any ERC4626 method or TurboSafe requiresAuth method. 
+ Assumes the Safe's authority gives permission to call these functions to the TurboRouter.
  */
 contract TurboRouter is ERC4626RouterBase, ENSReverseRecord {
     using SafeTransferLib for ERC20;
