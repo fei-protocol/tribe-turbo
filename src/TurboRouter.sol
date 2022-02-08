@@ -114,29 +114,4 @@ contract TurboRouter is ERC4626RouterBase, ENSReverseRecord {
     function sweep(TurboSafe safe, address to, ERC20 token, uint256 amount) external authenticate(address(safe)) {
         safe.sweep(to, token, amount);
     }
-
-    // TODO cleanup IERC4626 router so we don't need to add the below functions
-    function depositToVault(
-        IERC4626 vault,
-        address to,
-        uint256 amount,
-        uint256 minSharesOut
-    ) external payable returns (uint256 sharesOut) {}
-
-    function withdrawToDeposit(
-        IERC4626 fromVault,
-        IERC4626 toVault,
-        address to,
-        uint256 amount,
-        uint256 minSharesOut
-    ) external payable returns (uint256 sharesOut) {}
-
-    function redeemToDeposit(
-        IERC4626 fromVault,
-        IERC4626 toVault,
-        address to,
-        uint256 shares,
-        uint256 minSharesOut
-    ) external payable returns (uint256 sharesOut) {}
-
 }
