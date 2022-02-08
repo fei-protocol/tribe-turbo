@@ -40,6 +40,12 @@ contract TurboRouter is ERC4626RouterBase, ENSReverseRecord {
         _;
     }
 
+    function createSafe(ERC20 underlying) external {
+        (TurboSafe safe, ) = master.createSafe(underlying);
+
+        safe.setOwner(msg.sender);
+    }
+
     function createSafeAndDeposit(ERC20 underlying, address to, uint256 amount, uint256 minSharesOut) external {
         (TurboSafe safe, ) = master.createSafe(underlying);
 
