@@ -16,12 +16,8 @@ import {Auth, Authority} from "solmate/auth/Auth.sol";
 /**
  @title a router which can perform multiple Turbo actions between Master and the Safes
  @notice routes custom users flows between actions on the master and safes.
-         Accomodates use cases where the Safe and actions on the created Safe happen in the same transaction.
-         Supported Flows:
-          * creating a safe
-          * Auth methods (set owner/authority)
-          * ERC-4626 methods (deposit/withdraw/mint/redeem)
-          * TurboSafe methods (boost/less/sweep/slurp)
+
+ Extends the ERC4626RouterBase to allow for flexible combinations of actions involving ERC4626 and permit, weth, and Turbo specific actions.
  */
 contract TurboRouter is ERC4626RouterBase, ENSReverseRecord {
     using SafeTransferLib for ERC20;
@@ -32,10 +28,8 @@ contract TurboRouter is ERC4626RouterBase, ENSReverseRecord {
         master = _master;
     }
 
-    modifier authenticate(Auth target, bytes4 sig) {
-        Authority auth = target.authority();
-
-        require((address(auth) != address(0) && auth.canCall(msg.sender, address(target), sig)) || msg.sender == target.owner(), "not authed");
+    modifier authenticate(address target) {
+        require(msg.sender == Auth(target).owner(), "not authed");
 
         _;
     }
@@ -43,9 +37,9 @@ contract TurboRouter is ERC4626RouterBase, ENSReverseRecord {
     function createSafeAndDeposit(ERC20 underlying, address to, uint256 amount, uint256 minSharesOut) external {
         (TurboSafe safe, ) = master.createSafe(underlying);
 
-        safe.setOwner(msg.sender);
+        super.deposit(IERC4626(address(safe)), to, amount, minSharesOut);
 
-        deposit(IERC4626(address(safe)), to, amount, minSharesOut);
+        safe.setOwner(msg.sender);
     }
 
     function createSafeAndDepositAndBoost(
@@ -58,18 +52,18 @@ contract TurboRouter is ERC4626RouterBase, ENSReverseRecord {
     ) public {
         (TurboSafe safe, ) = master.createSafe(underlying);
 
+        super.deposit(IERC4626(address(safe)), to, amount, minSharesOut);
+
+        safe.boost(boostedVault, boostedFeiAmount);
+
         safe.setOwner(msg.sender);
-
-        deposit(IERC4626(address(safe)), to, amount, minSharesOut);
-
-        boost(safe, boostedVault, boostedFeiAmount);
     }
 
     function deposit(IERC4626 safe, address to, uint256 amount, uint256 minSharesOut) 
         public 
         payable 
         override 
-        authenticate(Auth(address(safe)), IERC4626.deposit.selector) 
+        authenticate(address(safe)) 
         returns (uint256) 
     {
         return super.deposit(safe, to, amount, minSharesOut);
@@ -79,7 +73,7 @@ contract TurboRouter is ERC4626RouterBase, ENSReverseRecord {
         public 
         payable 
         override 
-        authenticate(Auth(address(safe)), IERC4626.mint.selector) 
+        authenticate(address(safe)) 
         returns (uint256) 
     {
         return super.mint(safe, to, shares, maxAmountIn);
@@ -89,7 +83,7 @@ contract TurboRouter is ERC4626RouterBase, ENSReverseRecord {
         public 
         payable 
         override 
-        authenticate(Auth(address(safe)), IERC4626.withdraw.selector) 
+        authenticate(address(safe)) 
         returns (uint256) 
     {
         return super.withdraw(safe, to, amount, minSharesOut);
@@ -99,7 +93,7 @@ contract TurboRouter is ERC4626RouterBase, ENSReverseRecord {
         public 
         payable 
         override 
-        authenticate(Auth(address(safe)), IERC4626.redeem.selector) 
+        authenticate(address(safe)) 
         returns (uint256) 
     {
         return super.redeem(safe, to, shares, minAmountOut);
@@ -109,15 +103,15 @@ contract TurboRouter is ERC4626RouterBase, ENSReverseRecord {
         safe.slurp(vault);
     }
 
-    function boost(TurboSafe safe, ERC4626 vault, uint256 feiAmount) public authenticate(Auth(address(safe)), TurboSafe.boost.selector) {
+    function boost(TurboSafe safe, ERC4626 vault, uint256 feiAmount) public authenticate(address(safe)) {
         safe.boost(vault, feiAmount);
     }
 
-    function less(TurboSafe safe, ERC4626 vault, uint256 feiAmount) external authenticate(Auth(address(safe)), TurboSafe.less.selector) {
+    function less(TurboSafe safe, ERC4626 vault, uint256 feiAmount) external authenticate(address(safe)) {
         safe.less(vault, feiAmount);
     }
 
-    function sweep(TurboSafe safe, address to, ERC20 token, uint256 amount) external authenticate(Auth(address(safe)), TurboSafe.sweep.selector) {
+    function sweep(TurboSafe safe, address to, ERC20 token, uint256 amount) external authenticate(address(safe)) {
         safe.sweep(to, token, amount);
     }
 
