@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.10;
 
-import {ERC20} from "solmate-next/tokens/ERC20.sol";
-import {Auth, Authority} from "solmate-next/auth/Auth.sol";
+import {ERC20} from "solmate/tokens/ERC20.sol";
+import {Auth, Authority} from "solmate/auth/Auth.sol";
 
-import {ERC4626} from "solmate-next/mixins/ERC4626.sol";
+import {ERC4626} from "solmate/mixins/ERC4626.sol";
 
 import {TurboSafe} from "../TurboSafe.sol";
 
@@ -46,19 +46,19 @@ contract TurboBooster is Auth {
                      VAULT BOOST CAP CONFIGURATION
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Maps vaults to the cap on the amount of Fei used to boost them.
+    /// @notice Maps Vaults to the cap on the amount of Fei used to boost them.
     mapping(ERC4626 => uint256) public getBoostCapForVault;
 
-    /// @notice Emitted when a vault's boost cap is updated.
-    /// @param vault The vault who's boost cap was updated.
-    /// @param newBoostCap The new boost cap for the vault.
+    /// @notice Emitted when a Vault's boost cap is updated.
+    /// @param vault The Vault who's boost cap was updated.
+    /// @param newBoostCap The new boost cap for the Vault.
     event BoostCapUpdatedForVault(address indexed user, ERC4626 indexed vault, uint256 newBoostCap);
 
-    /// @notice Sets a vault's boost cap.
-    /// @param vault The vault to set the boost cap for.
-    /// @param newBoostCap The new boost cap for the vault.
+    /// @notice Sets a Vault's boost cap.
+    /// @param vault The Vault to set the boost cap for.
+    /// @param newBoostCap The new boost cap for the Vault.
     function setBoostCapForVault(ERC4626 vault, uint256 newBoostCap) external requiresAuth {
-        // Update the boost cap for the vault.
+        // Update the boost cap for the Vault.
         getBoostCapForVault[vault] = newBoostCap;
 
         emit BoostCapUpdatedForVault(msg.sender, vault, newBoostCap);
@@ -90,14 +90,14 @@ contract TurboBooster is Auth {
                           AUTHORIZATION LOGIC
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Returns whether a Safe is authorized to boost a vault.
-    /// @param safe The Safe to check is authorized to boost the vault.
+    /// @notice Returns whether a Safe is authorized to boost a Vault.
+    /// @param safe The Safe to check is authorized to boost the Vault.
     /// @param collateral The collateral/underlying token of the Safe.
-    /// @param vault The vault to check the Safe is authorized to boost.
-    /// @param feiAmount The amount of Fei asset to check the Safe is authorized boost the vault with.
-    /// @param newTotalBoostedForVault The total amount of Fei that will boosted to the vault after boost (if it is not rejected).
+    /// @param vault The Vault to check the Safe is authorized to boost.
+    /// @param feiAmount The amount of Fei asset to check the Safe is authorized boost the Vault with.
+    /// @param newTotalBoostedForVault The total amount of Fei that will boosted to the Vault after boost (if it is not rejected).
     /// @param newTotalBoostedAgainstCollateral The total amount of Fei that will be boosted against the Safe's collateral type after this boost.
-    /// @return Whether the Safe is authorized to boost the vault with the given amount of Fei asset.
+    /// @return Whether the Safe is authorized to boost the Vault with the given amount of Fei asset.
     function canSafeBoostVault(
         TurboSafe safe,
         ERC20 collateral,
@@ -108,7 +108,7 @@ contract TurboBooster is Auth {
     ) external view returns (bool) {
         return
             !frozen &&
-            getBoostCapForVault[vault] > newTotalBoostedForVault &&
-            getBoostCapForCollateral[collateral] > newTotalBoostedAgainstCollateral;
+            getBoostCapForVault[vault] >= newTotalBoostedForVault &&
+            getBoostCapForCollateral[collateral] >= newTotalBoostedAgainstCollateral;
     }
 }

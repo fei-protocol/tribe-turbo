@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.10;
 
-import {ERC20} from "solmate-next/tokens/ERC20.sol";
-import {Auth, Authority} from "solmate-next/auth/Auth.sol";
-import {SafeTransferLib} from "solmate-next/utils/SafeTransferLib.sol";
+import {ERC20} from "solmate/tokens/ERC20.sol";
+import {Auth, Authority} from "solmate/auth/Auth.sol";
+import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 
-import {ERC4626} from "solmate-next/mixins/ERC4626.sol";
+import {ERC4626} from "solmate/mixins/ERC4626.sol";
 
 import {FuseAdmin} from "./interfaces/FuseAdmin.sol";
 import {Comptroller} from "./interfaces/Comptroller.sol";
@@ -27,7 +27,7 @@ contract TurboMaster is Auth {
                                IMMUTABLES
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice  The Turbo Fuse Pool the Master and its Safes use.
+    /// @notice The Turbo Fuse Pool the Safes will interact with.
     Comptroller public immutable pool;
 
     /// @notice The Fei token on the network.
@@ -49,6 +49,7 @@ contract TurboMaster is Auth {
         Authority _authority
     ) Auth(_owner, _authority) {
         pool = _pool;
+
         fei = _fei;
 
         // Prevent the first safe from getting id 0.
@@ -140,13 +141,13 @@ contract TurboMaster is Auth {
                              SAFE STORAGE
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice The total Fei currently boosting vaults.
+    /// @notice The total Fei currently boosting Vaults.
     uint256 public totalBoosted;
 
     /// @notice Maps Safe addresses to the id they are stored under in the safes array.
     mapping(TurboSafe => uint256) public getSafeId;
 
-    /// @notice Maps vault addresses to the total amount of Fei they've being boosted with.
+    /// @notice Maps Vault addresses to the total amount of Fei they've being boosted with.
     mapping(ERC4626 => uint256) public getTotalBoostedForVault;
 
     /// @notice Maps collateral types to the total amount of Fei boosted by Safes using it as collateral.
@@ -211,26 +212,28 @@ contract TurboMaster is Auth {
                           SAFE CALLBACK LOGIC
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Callback triggered whenever a Safe boosts a vault.
-    /// @param vault The vault that was boosted.
-    /// @param feiAmount The amount of Fei used to boost the vault.
-    function onSafeBoost(ERC4626 vault, uint256 feiAmount) external {
+    /// @notice Callback triggered whenever a Safe boosts a Vault.
+    /// @param underlying The underlying token of the Safe.
+    /// @param vault The Vault that was boosted.
+    /// @param feiAmount The amount of Fei used to boost the Vault.
+    function onSafeBoost(
+        ERC20 underlying,
+        ERC4626 vault,
+        uint256 feiAmount
+    ) external {
         // Get the caller as a Safe instance.
         TurboSafe safe = TurboSafe(msg.sender);
 
         // Ensure the Safe was created by this Master.
         require(getSafeId[safe] != 0, "INVALID_SAFE");
 
-        // Get the Safe's underlying token.
-        ERC20 underlying = safe.underlying();
-
-        // Compute the total amount of Fei that will be boosting the vault.
+        // Compute the total amount of Fei that will be boosting the Vault.
         uint256 newTotalBoostedForVault = getTotalBoostedForVault[vault] + feiAmount;
 
         // Compute the total amount of Fei boosted that will be boosted the Safe's collateral type.
         uint256 newTotalBoostedAgainstCollateral = getTotalBoostedAgainstCollateral[underlying] + feiAmount;
 
-        // Check with the booster that the Safe is allowed to boost the vault using this amount of Fei.
+        // Check with the booster that the Safe is allowed to boost the Vault using this amount of Fei.
         require(
             booster.canSafeBoostVault(
                 safe,
@@ -243,23 +246,29 @@ contract TurboMaster is Auth {
             "BOOSTER_REJECTED"
         );
 
+        // Update the total amount of Fei being using to boost Vaults.
+        totalBoosted += feiAmount;
+
         unchecked {
-            // Update the total amount of Fei being using to boost vaults.
-            // Overflow is safe because it will be caught when updating the total against collateral.
-            totalBoosted += feiAmount;
+            // Update the total amount of Fei being using to boost the Vault.
+            // Cannot overflow because a Safe's total will never be greater than global total.
+            getTotalBoostedForVault[vault] = newTotalBoostedForVault;
+
+            // Update the total amount of Fei boosted against the collateral type.
+            // Cannot overflow because a collateral type's total will never be greater than global total.
+            getTotalBoostedAgainstCollateral[underlying] = newTotalBoostedAgainstCollateral;
         }
-
-        // Update the total amount of Fei being using to boost the vault.
-        getTotalBoostedForVault[vault] = newTotalBoostedForVault;
-
-        // Update the total amount of Fei boosted against the collateral type.
-        getTotalBoostedAgainstCollateral[safe.underlying()] = newTotalBoostedAgainstCollateral;
     }
 
-    /// @notice Callback triggered whenever a Safe withdraws from a vault.
-    /// @param vault The vault that was withdrawn from.
-    /// @param feiAmount The amount of Fei withdrawn from the vault.
-    function onSafeLess(ERC4626 vault, uint256 feiAmount) external {
+    /// @notice Callback triggered whenever a Safe withdraws from a Vault.
+    /// @param underlying The underlying token of the Safe.
+    /// @param vault The Vault that was withdrawn from.
+    /// @param feiAmount The amount of Fei withdrawn from the Vault.
+    function onSafeLess(
+        ERC20 underlying,
+        ERC4626 vault,
+        uint256 feiAmount
+    ) external {
         // Get the caller as a Safe instance.
         TurboSafe safe = TurboSafe(msg.sender);
 
@@ -267,35 +276,42 @@ contract TurboMaster is Auth {
         require(getSafeId[safe] != 0, "INVALID_SAFE");
 
         unchecked {
-            // Update the total amount of Fei being using to boost the vault.
+            // Update the total amount of Fei being using to boost the Vault.
             // Cannot underflow as the Safe validated the withdrawal amount before.
             getTotalBoostedForVault[vault] -= feiAmount;
 
-            // Update the total amount of Fei being using to boost vaults.
+            // Update the total amount of Fei being using to boost Vaults.
             // Cannot underflow as the Safe validated the withdrawal amount earlier.
             totalBoosted -= feiAmount;
 
             // Update the total amount of Fei boosted against the collateral type.
             // Cannot underflow as the Safe validated the withdrawal amount previously.
-            getTotalBoostedAgainstCollateral[safe.underlying()] -= feiAmount;
+            getTotalBoostedAgainstCollateral[underlying] -= feiAmount;
         }
     }
 
     /*///////////////////////////////////////////////////////////////
-                           FEE CLAIM LOGIC
+                              SWEEP LOGIC
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Emitted when fees are claimed by an authorized user.
-    /// @param user The authorized user who claimed the fees.
-    /// @param feiAmount The amount of Fei fees that were claimed.
-    event FeesClaimed(address indexed user, uint256 feiAmount);
+    /// @notice Emitted a token is sweeped from the Master.
+    /// @param user The user who sweeped the token from the Master.
+    /// @param to The recipient of the sweeped tokens.
+    /// @param amount The amount of the token that was sweeped.
+    event TokenSweeped(address indexed user, address indexed to, ERC20 indexed token, uint256 amount);
 
-    /// @notice Claims the fees generated as Fei sent to the Master.
-    /// @param feiAmount The amount of Fei fees that should be claimed.
-    function claimFees(uint256 feiAmount) external requiresAuth {
-        emit FeesClaimed(msg.sender, feiAmount);
+    /// @notice Claim tokens sitting idly in the Master.
+    /// @param to The recipient of the sweeped tokens.
+    /// @param token The token to sweep and send.
+    /// @param amount The amount of the token to sweep.
+    function sweep(
+        address to,
+        ERC20 token,
+        uint256 amount
+    ) external requiresAuth {
+        emit TokenSweeped(msg.sender, to, token, amount);
 
-        // Transfer the Fei fees to the authorized caller.
-        fei.safeTransfer(msg.sender, feiAmount);
+        // Transfer the sweeped tokens to the recipient.
+        token.safeTransfer(to, amount);
     }
 }

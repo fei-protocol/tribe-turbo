@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.10;
 
-import {ERC20} from "solmate-next/tokens/ERC20.sol";
-import {ERC4626} from "solmate-next/mixins/ERC4626.sol";
-import {Auth, Authority} from "solmate-next/auth/Auth.sol";
-import {SafeTransferLib} from "solmate-next/utils/SafeTransferLib.sol";
-import {FixedPointMathLib} from "solmate-next/utils/FixedPointMathLib.sol";
+import {ERC20} from "solmate/tokens/ERC20.sol";
+import {ERC4626} from "solmate/mixins/ERC4626.sol";
+import {Auth, Authority} from "solmate/auth/Auth.sol";
+import {ReentrancyGuard} from "solmate/utils/ReentrancyGuard.sol";
+import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
+import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
 
 import {LibFuse} from "libcompound/LibFuse.sol";
 import {CERC20} from "libcompound/interfaces/CERC20.sol";
@@ -17,29 +18,18 @@ import {TurboMaster} from "./TurboMaster.sol";
 /// @title Turbo Safe (tsToken)
 /// @author Transmissions11
 /// @notice Fuse liquidity accelerator.
-contract TurboSafe is Auth, ERC4626 {
+contract TurboSafe is Auth, ERC4626, ReentrancyGuard {
     using LibFuse for CERC20;
     using SafeTransferLib for ERC20;
     using FixedPointMathLib for uint256;
 
     /*///////////////////////////////////////////////////////////////
-                          TURBO MASTER STORAGE
+                               IMMUTABLES
     //////////////////////////////////////////////////////////////*/
 
     /// @notice The Master contract that created the Safe.
-    /// @dev Used to access the current Custodian and send fees.
+    /// @dev Fees are paid directly to the Master, where they can be swept.
     TurboMaster public immutable master;
-
-    /*///////////////////////////////////////////////////////////////
-                               SAFE STORAGE
-    //////////////////////////////////////////////////////////////*/
-
-    /// @notice The current total amount of Fei the Safe is using to boost vaults.
-    uint256 totalFeiBoosted;
-
-    /// @notice Maps vaults to the total amount of Fei they've being boosted with.
-    /// @dev Used to determine the fees to be paid back to the Master.
-    mapping(ERC4626 => uint256) getTotalFeiBoostedForVault;
 
     /// @notice The Fei token on the network.
     ERC20 public immutable fei;
@@ -47,10 +37,10 @@ contract TurboSafe is Auth, ERC4626 {
     /// @notice The Turbo Fuse Pool contract that collateral is held in and Fei is borrowed from.
     Comptroller public immutable pool;
 
-    /// @notice The Fei cToken in the Turbo Fuse Pool that is borrowed from
+    /// @notice The Fei cToken in the Turbo Fuse Pool that Fei is borrowed from.
     CERC20 public immutable feiTurboCToken;
 
-    /// @notice The vault that accepts the underlying token in the Turbo Fuse Pool.
+    /// @notice The cToken that accepts the underlying token in the Turbo Fuse Pool.
     CERC20 public immutable underlyingTurboCToken;
 
     /*///////////////////////////////////////////////////////////////
@@ -78,13 +68,37 @@ contract TurboSafe is Auth, ERC4626 {
         master = TurboMaster(msg.sender);
 
         fei = master.fei();
+
+        // An underlying of Fei makes no sense.
+        require(asset != fei, "INVALID_UNDERLYING");
+
         pool = master.pool();
+
         feiTurboCToken = pool.cTokensByUnderlying(fei);
-        underlyingTurboCToken = pool.cTokensByUnderlying(underlying);
+
+        underlyingTurboCToken = pool.cTokensByUnderlying(asset);
 
         // If the provided underlying is not supported by the Turbo Fuse Pool, revert.
         require(address(underlyingTurboCToken) != address(0), "UNSUPPORTED_UNDERLYING");
+
+        // Construct an array of market(s) to enable as collateral.
+        CERC20[] memory marketsToEnter = new CERC20[](1);
+        marketsToEnter[0] = underlyingTurboCToken;
+
+        // Enter the market(s) and ensure to properly revert if there is an error.
+        require(pool.enterMarkets(marketsToEnter)[0] == 0, "ENTER_MARKETS_FAILED");
     }
+
+    /*///////////////////////////////////////////////////////////////
+                               SAFE STORAGE
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice The current total amount of Fei the Safe is using to boost Vaults.
+    uint256 public totalFeiBoosted;
+
+    /// @notice Maps Vaults to the total amount of Fei they've being boosted with.
+    /// @dev Used to determine the fees to be paid back to the Master.
+    mapping(ERC4626 => uint256) public getTotalFeiBoostedForVault;
 
     /*///////////////////////////////////////////////////////////////
                              ERC4626 LOGIC
@@ -93,7 +107,7 @@ contract TurboSafe is Auth, ERC4626 {
     /// @notice Called before any type of withdrawal occurs.
     /// @param underlyingAmount The amount of underlying tokens being withdrawn.
     /// @dev Using requiresAuth here prevents unauthorized users from withdrawing.
-    function beforeWithdraw(uint256 underlyingAmount) internal override requiresAuth {
+    function beforeWithdraw(uint256 underlyingAmount, uint256) internal override requiresAuth nonReentrant {
         // Withdraw the underlying tokens from the Turbo Fuse Pool.
         require(underlyingTurboCToken.redeemUnderlying(underlyingAmount) == 0, "REDEEM_FAILED");
     }
@@ -101,9 +115,9 @@ contract TurboSafe is Auth, ERC4626 {
     /// @notice Called before any type of deposit occurs.
     /// @param underlyingAmount The amount of underlying tokens being deposited.
     /// @dev Using requiresAuth here prevents unauthorized users from depositing.
-    function afterDeposit(uint256 underlyingAmount) internal override requiresAuth {
+    function afterDeposit(uint256 underlyingAmount, uint256) internal override requiresAuth nonReentrant {
         // Approve the underlying tokens to the Turbo Fuse Pool.
-        underlying.approve(address(underlyingTurboCToken), underlyingAmount);
+        asset.approve(address(underlyingTurboCToken), underlyingAmount);
 
         // Collateralize the underlying tokens in the Turbo Fuse Pool.
         require(underlyingTurboCToken.mint(underlyingAmount) == 0, "MINT_FAILED");
@@ -111,81 +125,77 @@ contract TurboSafe is Auth, ERC4626 {
 
     /// @notice Returns the total amount of underlying tokens held in the Safe.
     /// @return The total amount of underlying tokens held in the Safe.
-    function totalHoldings() public view override returns (uint256) {
+    function totalAssets() public view override returns (uint256) {
         return underlyingTurboCToken.viewUnderlyingBalanceOf(address(this));
     }
 
     /*///////////////////////////////////////////////////////////////
-                             SAFE LOGIC
+                           BOOST/LESS LOGIC
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Emitted when a vault is boosted by the Safe.
-    /// @param user The user who slurped the vault.
-    /// @param vault The vault that was boosted.
-    /// @param feiAmount The amount of Fei that was boosted to the vault.
+    /// @notice Emitted when a Vault is boosted by the Safe.
+    /// @param user The user who slurped the Vault.
+    /// @param vault The Vault that was boosted.
+    /// @param feiAmount The amount of Fei that was boosted to the Vault.
     event VaultBoosted(address indexed user, ERC4626 indexed vault, uint256 feiAmount);
 
-    /// @notice Borrow Fei from the Turbo Fuse Pool and deposit it into an authorized vault.
-    /// @param vault The vault to deposit the borrowed Fei into.
-    /// @param feiAmount The amount of Fei to borrow and supply into the vault.
-    /// @dev Automatically accrues any fees earned by the Safe in the vault to the Master.
-    function boost(ERC4626 vault, uint256 feiAmount) external requiresAuth {
-        // Ensure the vault accepts Fei underlying.
-        require(vault.underlying() == fei, "NOT_FEI");
+    /// @notice Borrow Fei from the Turbo Fuse Pool and deposit it into an authorized Vault.
+    /// @param vault The Vault to deposit the borrowed Fei into.
+    /// @param feiAmount The amount of Fei to borrow and supply into the Vault.
+    /// @dev Automatically accrues any fees earned by the Safe in the Vault to the Master.
+    function boost(ERC4626 vault, uint256 feiAmount) external requiresAuth nonReentrant {
+        // Ensure the Vault accepts Fei underlying.
+        require(vault.asset() == fei, "NOT_FEI");
 
         // Call the Master where it will do extra validation
         // and update it's total count of funds used for boosting.
-        master.onSafeBoost(vault, feiAmount);
-
-        unchecked {
-            // Update the total Fei deposited into the vault proportionately.
-            // Overflow is safe because it will be caught when updating the total.
-            getTotalFeiBoostedForVault[vault] += feiAmount;
-        }
+        master.onSafeBoost(asset, vault, feiAmount);
 
         // Increase the boost total proportionately.
         totalFeiBoosted += feiAmount;
 
-        slurp(vault); // Accrue any fees earned by the vault.
+        unchecked {
+            // Update the total Fei deposited into the Vault proportionately.
+            // Cannot overflow because the total cannot be less than a single Vault.
+            getTotalFeiBoostedForVault[vault] += feiAmount;
+        }
 
         emit VaultBoosted(msg.sender, vault, feiAmount);
 
         // Borrow the Fei amount from the Fei cToken in the Turbo Fuse Pool.
         require(feiTurboCToken.borrow(feiAmount) == 0, "BORROW_FAILED");
 
-        // Approve the borrowed Fei to the specified vault.
+        // Approve the borrowed Fei to the specified Vault.
         fei.safeApprove(address(vault), feiAmount);
 
-        // Deposit the Fei into the specified vault.
-        vault.deposit(address(this), feiAmount);
+        // Deposit the Fei into the specified Vault.
+        vault.deposit(feiAmount, address(this));
     }
 
-    /// @notice Emitted when a vault is withdrawn from by the Safe.
-    /// @param user The user who slurped the vault.
-    /// @param vault The vault that was withdrawn from.
-    /// @param feiAmount The amount of Fei that was withdrawn from the vault.
+    /// @notice Emitted when a Vault is withdrawn from by the Safe.
+    /// @param user The user who slurped the Vault.
+    /// @param vault The Vault that was withdrawn from.
+    /// @param feiAmount The amount of Fei that was withdrawn from the Vault.
     event VaultLessened(address indexed user, ERC4626 indexed vault, uint256 feiAmount);
 
-    /// @notice Withdraw Fei from a deposited vault and use it to repay debt in the Turbo Fuse Pool.
-    /// @param vault The vault to withdraw the Fei from.
-    /// @param feiAmount The amount of Fei to withdraw from the vault and repay in the Turbo Fuse Pool.
-    /// @dev Automatically accrues any fees earned by the Safe in the vault to the Master.
-    function less(ERC4626 vault, uint256 feiAmount) external requiresAuth {
-        slurp(vault); // Accrue any fees earned by the vault.
-
-        // Update the total Fei deposited into the vault proportionately.
+    /// @notice Withdraw Fei from a deposited Vault and use it to repay debt in the Turbo Fuse Pool.
+    /// @param vault The Vault to withdraw the Fei from.
+    /// @param feiAmount The amount of Fei to withdraw from the Vault and repay in the Turbo Fuse Pool.
+    /// @dev Automatically accrues any fees earned by the Safe in the Vault to the Master.
+    function less(ERC4626 vault, uint256 feiAmount) external requiresAuth nonReentrant {
+        // Update the total Fei deposited into the Vault proportionately.
         getTotalFeiBoostedForVault[vault] -= feiAmount;
 
         unchecked {
             // Decrease the boost total proportionately.
-            // Cannot underflow because the total cannot be lower than a single vault.
+            // Cannot underflow because the total cannot be less than a single Vault.
             totalFeiBoosted -= feiAmount;
         }
 
         emit VaultLessened(msg.sender, vault, feiAmount);
 
-        // Withdraw the specified amount of Fei from the vault.
-        vault.withdraw(address(this), feiAmount);
+        // Withdraw the specified amount of Fei from the Vault.
+        vault.withdraw(feiAmount, address(this), address(this));
 
         // Approve the specified amount of Fei to Fei cToken in the Turbo Fuse Pool.
         fei.safeApprove(address(feiTurboCToken), feiAmount);
@@ -197,16 +207,20 @@ contract TurboSafe is Auth, ERC4626 {
         // The surplus Fei will accrue as fees and can be sweeped.
         if (feiAmount > feiDebt) feiAmount = feiDebt;
 
-        // Repay the specified amount of Fei in the Turbo Fuse Pool.
-        require(feiTurboCToken.repayBorrow(feiAmount) == 0, "REPAY_FAILED");
+        // Repay Fei debt in the Turbo Fuse Pool, unless we would repay nothing.
+        if (feiAmount != 0) require(feiTurboCToken.repayBorrow(feiAmount) == 0, "REPAY_FAILED");
 
         // Call the Master to allow it to update its accounting.
-        master.onSafeLess(vault, feiAmount);
+        master.onSafeLess(asset, vault, feiAmount);
     }
 
-    /// @notice Emitted when a vault is slurped from by the Safe.
-    /// @param user The user who slurped the vault.
-    /// @param vault The vault that was slurped.
+    /*///////////////////////////////////////////////////////////////
+                              SLURP LOGIC
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice Emitted when a Vault is slurped from by the Safe.
+    /// @param user The user who slurped the Vault.
+    /// @param vault The Vault that was slurped.
     /// @param protocolFeeAmount The amount of Fei accrued as fees to the Master.
     /// @param safeInterestAmount The amount of Fei accrued as interest to the Safe.
     event VaultSlurped(
@@ -216,44 +230,43 @@ contract TurboSafe is Auth, ERC4626 {
         uint256 safeInterestAmount
     );
 
-    /// @notice Accrue any fees earned by the Safe in the vault to the Master.
-    /// @param vault The vault to accrue fees from and send to the Master.
-    function slurp(ERC4626 vault) public {
-        // Ensure the Safe has Fei currently boosting the vault.
+    /// @notice Accrue any interest earned by the Safe in the Vault.
+    /// @param vault The Vault to accrue interest from, if any.
+    /// @dev Sends a portion of the interest to the Master, as determined by the Clerk.
+    function slurp(ERC4626 vault) external nonReentrant {
+        // Ensure the Safe has Fei currently boosting the Vault.
         require(getTotalFeiBoostedForVault[vault] != 0, "NO_FEI_BOOSTED");
 
-        // Compute the amount of Fei interest the Safe generated by boosting the vault.
-        uint256 interestEarned = vault.balanceOfUnderlying(address(this)) - getTotalFeiBoostedForVault[vault];
+        // Compute the amount of Fei interest the Safe generated by boosting the Vault.
+        uint256 interestEarned = vault.assetsOf(address(this)) - getTotalFeiBoostedForVault[vault];
 
         // Compute what percentage of the interest earned will go back to the
-        uint256 protocolFeePercent = master.clerk().getFeePercentageForSafe(this, underlying);
+        uint256 protocolFeePercent = master.clerk().getFeePercentageForSafe(this, asset);
 
         // Compute the amount of Fei the protocol will retain as fees.
-        uint256 protocolFeeAmount = interestEarned.fmul(protocolFeePercent, 1e18);
+        uint256 protocolFeeAmount = interestEarned.mulWadDown(protocolFeePercent);
 
         // Compute the amount of Fei the Safe will retain as interest.
         uint256 safeInterestAmount = interestEarned - protocolFeeAmount;
 
-        unchecked {
-            // Update the total Fei held in the vault proportionately.
-            // Overflow is safe because it will be caught when updating the total.
-            getTotalFeiBoostedForVault[vault] += safeInterestAmount;
-        }
-
         // Increase the boost total proportionately.
         totalFeiBoosted += safeInterestAmount;
 
+        unchecked {
+            // Update the total Fei held in the Vault proportionately.
+            // Cannot overflow because the total cannot be less than a single Vault.
+            getTotalFeiBoostedForVault[vault] += safeInterestAmount;
+        }
+
         emit VaultSlurped(msg.sender, vault, protocolFeeAmount, safeInterestAmount);
 
-        // If we have unaccrued fees:
-        if (protocolFeeAmount != 0) {
-            // Withdraw them from the vault.
-            vault.withdraw(address(this), protocolFeeAmount);
-
-            // Transfer the fees owed as Fei to the Master.
-            fei.safeTransfer(address(master), protocolFeeAmount);
-        }
+        // If we have unaccrued fees, withdraw them from the Vault and transfer them to the Master.
+        if (protocolFeeAmount != 0) vault.withdraw(protocolFeeAmount, address(this), address(master));
     }
+
+    /*///////////////////////////////////////////////////////////////
+                              SWEEP LOGIC
+    //////////////////////////////////////////////////////////////*/
 
     /// @notice Emitted a token is sweeped from the Safe.
     /// @param user The user who sweeped the token from the Safe.
@@ -269,11 +282,10 @@ contract TurboSafe is Auth, ERC4626 {
         address to,
         ERC20 token,
         uint256 amount
-    ) external requiresAuth {
-        // Ensure the caller is not trying to steal vault shares or collateral cTokens.
+    ) external requiresAuth nonReentrant {
+        // Ensure the caller is not trying to steal Vault shares or collateral cTokens.
         require(
-            getTotalFeiBoostedForVault[ERC4626(address(token))] == 0 &&
-                address(token) != address(underlyingTurboCToken),
+            getTotalFeiBoostedForVault[ERC4626(address(token))] == 0 && token != underlyingTurboCToken,
             "INVALID_TOKEN"
         );
 
@@ -282,6 +294,10 @@ contract TurboSafe is Auth, ERC4626 {
         // Transfer the sweeped tokens to the recipient.
         token.safeTransfer(to, amount);
     }
+
+    /*///////////////////////////////////////////////////////////////
+                               GIB LOGIC
+    //////////////////////////////////////////////////////////////*/
 
     /// @notice Emitted when a Safe is gibbed.
     /// @param user The user who gibbed the Safe.
@@ -292,9 +308,9 @@ contract TurboSafe is Auth, ERC4626 {
     /// @notice Impound a specific amount of a Safe's collateral.
     /// @param to The address to send the impounded collateral to.
     /// @param underlyingAmount The amount of the underlying to impound.
-    /// @dev Requires special authorization from the Custodian.
+    /// @dev Can only be called by the Gibber, not by the Safe owner.
     /// @dev Debt must be repaid in advance, or the redemption will fail.
-    function gib(address to, uint256 underlyingAmount) external {
+    function gib(address to, uint256 underlyingAmount) external nonReentrant {
         // Ensure the caller is the Master's current Gibber.
         require(msg.sender == address(master.gibber()), "NOT_GIBBER");
 
@@ -304,6 +320,6 @@ contract TurboSafe is Auth, ERC4626 {
         require(underlyingTurboCToken.redeemUnderlying(underlyingAmount) == 0, "REDEEM_FAILED");
 
         // Transfer the underlying tokens to the authorized caller.
-        underlying.safeTransfer(to, underlyingAmount);
+        asset.safeTransfer(to, underlyingAmount);
     }
 }
