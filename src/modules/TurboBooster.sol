@@ -2,9 +2,8 @@
 pragma solidity 0.8.10;
 
 import {ERC20} from "solmate/tokens/ERC20.sol";
-import {Auth, Authority} from "solmate/auth/Auth.sol";
-
 import {ERC4626} from "solmate/mixins/ERC4626.sol";
+import {Auth, Authority} from "solmate/auth/Auth.sol";
 
 import {TurboSafe} from "../TurboSafe.sol";
 

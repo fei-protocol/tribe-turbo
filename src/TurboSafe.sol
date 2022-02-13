@@ -104,14 +104,6 @@ contract TurboSafe is Auth, ERC4626, ReentrancyGuard {
                              ERC4626 LOGIC
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Called before any type of withdrawal occurs.
-    /// @param underlyingAmount The amount of underlying tokens being withdrawn.
-    /// @dev Using requiresAuth here prevents unauthorized users from withdrawing.
-    function beforeWithdraw(uint256 underlyingAmount, uint256) internal override requiresAuth nonReentrant {
-        // Withdraw the underlying tokens from the Turbo Fuse Pool.
-        require(underlyingTurboCToken.redeemUnderlying(underlyingAmount) == 0, "REDEEM_FAILED");
-    }
-
     /// @notice Called before any type of deposit occurs.
     /// @param underlyingAmount The amount of underlying tokens being deposited.
     /// @dev Using requiresAuth here prevents unauthorized users from depositing.
@@ -121,6 +113,14 @@ contract TurboSafe is Auth, ERC4626, ReentrancyGuard {
 
         // Collateralize the underlying tokens in the Turbo Fuse Pool.
         require(underlyingTurboCToken.mint(underlyingAmount) == 0, "MINT_FAILED");
+    }
+
+    /// @notice Called before any type of withdrawal occurs.
+    /// @param underlyingAmount The amount of underlying tokens being withdrawn.
+    /// @dev Using requiresAuth here prevents unauthorized users from withdrawing.
+    function beforeWithdraw(uint256 underlyingAmount, uint256) internal override requiresAuth nonReentrant {
+        // Withdraw the underlying tokens from the Turbo Fuse Pool.
+        require(underlyingTurboCToken.redeemUnderlying(underlyingAmount) == 0, "REDEEM_FAILED");
     }
 
     /// @notice Returns the total amount of underlying tokens held in the Safe.

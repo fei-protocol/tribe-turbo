@@ -2,10 +2,9 @@
 pragma solidity 0.8.10;
 
 import {ERC20} from "solmate/tokens/ERC20.sol";
+import {ERC4626} from "solmate/mixins/ERC4626.sol";
 import {Auth, Authority} from "solmate/auth/Auth.sol";
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
-
-import {ERC4626} from "solmate/mixins/ERC4626.sol";
 
 import {FuseAdmin} from "./interfaces/FuseAdmin.sol";
 import {Comptroller} from "./interfaces/Comptroller.sol";
@@ -144,7 +143,7 @@ contract TurboMaster is Auth {
     /// @notice The total Fei currently boosting Vaults.
     uint256 public totalBoosted;
 
-    /// @notice Maps Safe addresses to the id they are stored under in the safes array.
+    /// @notice Maps Safe addresses to the id they are stored under in the Safes array.
     mapping(TurboSafe => uint256) public getSafeId;
 
     /// @notice Maps Vault addresses to the total amount of Fei they've being boosted with.
