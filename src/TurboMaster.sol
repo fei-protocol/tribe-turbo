@@ -96,26 +96,6 @@ contract TurboMaster is Auth {
     }
 
     /*///////////////////////////////////////////////////////////////
-                            GIBBER STORAGE
-    //////////////////////////////////////////////////////////////*/
-
-    /// @notice The Gibber module used by the Master and its Safes.
-    TurboGibber public gibber;
-
-    /// @notice Emitted when the Gibber is updated.
-    /// @param user The user who triggered the update of the Gibber.
-    /// @param newGibber The new Gibber contract used by the Master.
-    event GibberUpdated(address indexed user, TurboGibber newGibber);
-
-    /// @notice Update the Gibber used by the Master.
-    /// @param newGibber The new Gibber contract to be used by the Master.
-    function setGibber(TurboGibber newGibber) external requiresAuth {
-        gibber = newGibber;
-
-        emit GibberUpdated(msg.sender, newGibber);
-    }
-
-    /*///////////////////////////////////////////////////////////////
                   DEFAULT SAFE AUTHORITY CONFIGURATION
     //////////////////////////////////////////////////////////////*/
 

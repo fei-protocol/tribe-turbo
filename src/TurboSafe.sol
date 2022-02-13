@@ -15,7 +15,7 @@ import {Comptroller} from "./interfaces/Comptroller.sol";
 
 import {TurboMaster} from "./TurboMaster.sol";
 
-/// @title Turbo Safe (tsToken)
+/// @title Turbo Safe
 /// @author Transmissions11
 /// @notice Fuse liquidity accelerator.
 contract TurboSafe is Auth, ERC4626, ReentrancyGuard {
@@ -101,13 +101,31 @@ contract TurboSafe is Auth, ERC4626, ReentrancyGuard {
     mapping(ERC4626 => uint256) public getTotalFeiBoostedForVault;
 
     /*///////////////////////////////////////////////////////////////
+                               MODIFIERS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev Checks the caller is authorized using either the Master's Authority or the Safe's local Authority.
+    modifier requiresLocalOrMasterAuth() {
+        // Check if the caller is the owner first, if not check if the Master's Authority approves,
+        // if the Master's Authority doesn't approve either we need to check the Safe's Authority:
+        if (msg.sender != owner && !master.authority().canCall(msg.sender, address(this), msg.sig)) {
+            Authority auth = authority; // Memoizing authority saves us a warm SLOAD, around 100 gas.
+
+            // The only authorization option left is via the local Authority, otherwise revert.
+            require(address(auth) != address(0) && auth.canCall(msg.sender, address(this), msg.sig), "UNAUTHORIZED");
+        }
+
+        _;
+    }
+
+    /*///////////////////////////////////////////////////////////////
                              ERC4626 LOGIC
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Called before any type of deposit occurs.
     /// @param underlyingAmount The amount of underlying tokens being deposited.
     /// @dev Using requiresAuth here prevents unauthorized users from depositing.
-    function afterDeposit(uint256 underlyingAmount, uint256) internal override requiresAuth nonReentrant {
+    function afterDeposit(uint256 underlyingAmount, uint256) internal override nonReentrant requiresAuth {
         // Approve the underlying tokens to the Turbo Fuse Pool.
         asset.approve(address(underlyingTurboCToken), underlyingAmount);
 
@@ -118,7 +136,7 @@ contract TurboSafe is Auth, ERC4626, ReentrancyGuard {
     /// @notice Called before any type of withdrawal occurs.
     /// @param underlyingAmount The amount of underlying tokens being withdrawn.
     /// @dev Using requiresAuth here prevents unauthorized users from withdrawing.
-    function beforeWithdraw(uint256 underlyingAmount, uint256) internal override requiresAuth nonReentrant {
+    function beforeWithdraw(uint256 underlyingAmount, uint256) internal override nonReentrant requiresAuth {
         // Withdraw the underlying tokens from the Turbo Fuse Pool.
         require(underlyingTurboCToken.redeemUnderlying(underlyingAmount) == 0, "REDEEM_FAILED");
     }
@@ -143,7 +161,7 @@ contract TurboSafe is Auth, ERC4626, ReentrancyGuard {
     /// @param vault The Vault to deposit the borrowed Fei into.
     /// @param feiAmount The amount of Fei to borrow and supply into the Vault.
     /// @dev Automatically accrues any fees earned by the Safe in the Vault to the Master.
-    function boost(ERC4626 vault, uint256 feiAmount) external requiresAuth nonReentrant {
+    function boost(ERC4626 vault, uint256 feiAmount) external nonReentrant requiresAuth {
         // Ensure the Vault accepts Fei underlying.
         require(vault.asset() == fei, "NOT_FEI");
 
@@ -182,7 +200,7 @@ contract TurboSafe is Auth, ERC4626, ReentrancyGuard {
     /// @param vault The Vault to withdraw the Fei from.
     /// @param feiAmount The amount of Fei to withdraw from the Vault and repay in the Turbo Fuse Pool.
     /// @dev Automatically accrues any fees earned by the Safe in the Vault to the Master.
-    function less(ERC4626 vault, uint256 feiAmount) external requiresAuth nonReentrant {
+    function less(ERC4626 vault, uint256 feiAmount) external nonReentrant requiresLocalOrMasterAuth {
         // Update the total Fei deposited into the Vault proportionately.
         getTotalFeiBoostedForVault[vault] -= feiAmount;
 
@@ -233,7 +251,7 @@ contract TurboSafe is Auth, ERC4626, ReentrancyGuard {
     /// @notice Accrue any interest earned by the Safe in the Vault.
     /// @param vault The Vault to accrue interest from, if any.
     /// @dev Sends a portion of the interest to the Master, as determined by the Clerk.
-    function slurp(ERC4626 vault) external nonReentrant {
+    function slurp(ERC4626 vault) external nonReentrant requiresLocalOrMasterAuth {
         // Ensure the Safe has Fei currently boosting the Vault.
         require(getTotalFeiBoostedForVault[vault] != 0, "NO_FEI_BOOSTED");
 
@@ -282,7 +300,7 @@ contract TurboSafe is Auth, ERC4626, ReentrancyGuard {
         address to,
         ERC20 token,
         uint256 amount
-    ) external requiresAuth nonReentrant {
+    ) external nonReentrant requiresAuth {
         // Ensure the caller is not trying to steal Vault shares or collateral cTokens.
         require(
             getTotalFeiBoostedForVault[ERC4626(address(token))] == 0 && token != underlyingTurboCToken,
@@ -310,10 +328,7 @@ contract TurboSafe is Auth, ERC4626, ReentrancyGuard {
     /// @param underlyingAmount The amount of the underlying to impound.
     /// @dev Can only be called by the Gibber, not by the Safe owner.
     /// @dev Debt must be repaid in advance, or the redemption will fail.
-    function gib(address to, uint256 underlyingAmount) external nonReentrant {
-        // Ensure the caller is the Master's current Gibber.
-        require(msg.sender == address(master.gibber()), "NOT_GIBBER");
-
+    function gib(address to, uint256 underlyingAmount) external nonReentrant requiresLocalOrMasterAuth {
         emit SafeGibbed(msg.sender, to, underlyingAmount);
 
         // Withdraw the specified amount of underlying tokens from the Turbo Fuse Pool.
