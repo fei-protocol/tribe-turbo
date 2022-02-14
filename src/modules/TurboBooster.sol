@@ -91,7 +91,7 @@ contract TurboBooster is Auth {
 
     /// @notice Returns whether a Safe is authorized to boost a Vault.
     /// @param safe The Safe to check is authorized to boost the Vault.
-    /// @param collateral The collateral/underlying token of the Safe.
+    /// @param collateral The collateral/asset of the Safe.
     /// @param vault The Vault to check the Safe is authorized to boost.
     /// @param feiAmount The amount of Fei asset to check the Safe is authorized boost the Vault with.
     /// @param newTotalBoostedForVault The total amount of Fei that will boosted to the Vault after boost (if it is not rejected).

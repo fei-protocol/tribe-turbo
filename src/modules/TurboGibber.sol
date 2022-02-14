@@ -5,9 +5,8 @@ import {ERC20} from "solmate/tokens/ERC20.sol";
 import {Auth, Authority} from "solmate/auth/Auth.sol";
 import {ReentrancyGuard} from "solmate/utils/ReentrancyGuard.sol";
 
-import {CERC20} from "libcompound/interfaces/CERC20.sol";
-
 import {Fei} from "../interfaces/Fei.sol";
+import {CERC20} from "../interfaces/CERC20.sol";
 
 import {TurboSafe} from "../TurboSafe.sol";
 import {TurboMaster} from "../TurboMaster.sol";
@@ -58,36 +57,36 @@ contract TurboGibber is Auth, ReentrancyGuard {
     /// @param user The user who executed the impound.
     /// @param safe The Safe that was impounded.
     /// @param feiAmount The amount of Fei that was repaid.
-    /// @param underlyingAmount The amount of underlying tokens impounded.
-    event ImpoundExecuted(address indexed user, TurboSafe indexed safe, uint256 feiAmount, uint256 underlyingAmount);
+    /// @param assetAmount The amount of assets impounded.
+    event ImpoundExecuted(address indexed user, TurboSafe indexed safe, uint256 feiAmount, uint256 assetAmount);
 
     /// @notice Impound a safe.
     /// @param safe The Safe to be impounded.
     /// @param feiAmount The amount of Fei to repay the Safe's debt with.
-    /// @param underlyingAmount The amount of underlying tokens to impound.
+    /// @param assetAmount The amount of assets to impound.
     /// @param to The recipient of the impounded collateral tokens.
     function impound(
         TurboSafe safe,
         uint256 feiAmount,
-        uint256 underlyingAmount,
+        uint256 assetAmount,
         address to
     ) external requiresAuth nonReentrant {
         // Ensure the Safe is registered with the Master.
         require(master.getSafeId(safe) != 0);
 
-        emit ImpoundExecuted(msg.sender, safe, feiAmount, underlyingAmount);
+        emit ImpoundExecuted(msg.sender, safe, feiAmount, assetAmount);
 
         // Mint the Fei amount requested.
         fei.mint(address(this), feiAmount);
 
         // Approve the Fei amount to the Fei cToken.
-        fei.approve(address(feiTurboCToken), feiAmount);
+        fei.safeApprove(address(feiTurboCToken), feiAmount);
 
         // Repay the safe's Fei debt with the minted Fei, ensuring to catch cToken errors.
         require(feiTurboCToken.repayBorrowBehalf(address(safe), feiAmount) == 0, "REPAY_FAILED");
 
         // Impound some of the safe's collateral and send it to the chosen recipient.
-        safe.gib(to, underlyingAmount);
+        safe.gib(to, assetAmount);
     }
 
     /// @notice Impound all of a safe's collateral.
@@ -97,27 +96,27 @@ contract TurboGibber is Auth, ReentrancyGuard {
         // Ensure the Safe is registered with the Master.
         require(master.getSafeId(safe) != 0);
 
-        // Get the underlying cToken in the Turbo Fuse Pool.
-        CERC20 underlyingCToken = safe.underlyingTurboCToken();
+        // Get the asset cToken in the Turbo Fuse Pool.
+        CERC20 assetCToken = safe.assetTurboCToken();
 
-        // Get the amount of underlying tokens to impound from the Safe.
-        uint256 underlyingAmount = underlyingCToken.balanceOfUnderlying(address(safe));
+        // Get the amount of assets to impound from the Safe.
+        uint256 assetAmount = assetCToken.balanceOfUnderlying(address(safe));
 
         // Get the amount of Fei debt to repay for the Safe.
-        uint256 feiAmount = underlyingCToken.borrowBalanceCurrent(address(safe));
+        uint256 feiAmount = assetCToken.borrowBalanceCurrent(address(safe));
 
-        emit ImpoundExecuted(msg.sender, safe, feiAmount, underlyingAmount);
+        emit ImpoundExecuted(msg.sender, safe, feiAmount, assetAmount);
 
         // Mint the Fei amount requested.
         fei.mint(address(this), feiAmount);
 
         // Approve the Fei amount to the Fei cToken.
-        fei.approve(address(feiTurboCToken), feiAmount);
+        fei.safeApprove(address(feiTurboCToken), feiAmount);
 
         // Repay the safe's Fei debt with the minted Fei, ensuring to catch cToken errors.
         require(feiTurboCToken.repayBorrowBehalf(address(safe), feiAmount) == 0, "REPAY_FAILED");
 
         // Impound all of the safe's collateral and send it to the chosen recipient.
-        safe.gib(to, underlyingAmount);
+        safe.gib(to, assetAmount);
     }
 }

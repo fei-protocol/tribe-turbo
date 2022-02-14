@@ -2,48 +2,82 @@
 pragma solidity 0.8.10;
 
 import {ERC20} from "solmate/tokens/ERC20.sol";
+import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
+import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
 
-import {CERC20} from "libcompound/interfaces/CERC20.sol";
-import {InterestRateModel} from "libcompound/interfaces/InterestRateModel.sol";
+import {CERC20} from "../../interfaces/CERC20.sol";
 
 contract MockCToken is CERC20 {
-    function underlying() external view override returns (ERC20) {}
+    using SafeTransferLib for ERC20;
+    using FixedPointMathLib for uint256;
 
-    function totalBorrows() external view override returns (uint256) {}
+    /*///////////////////////////////////////////////////////////////
+                              CTOKEN LOGIC
+    //////////////////////////////////////////////////////////////*/
 
-    function totalFuseFees() external view override returns (uint256) {}
+    ERC20 public underlying;
 
-    function totalReserves() external view override returns (uint256) {}
+    mapping(address => uint256) public override borrowBalanceCurrent;
 
-    function exchangeRateCurrent() external override returns (uint256) {}
+    function mint(uint256 underlyingAmount) external override returns (uint256) {
+        underlying.safeTransferFrom(msg.sender, address(this), underlyingAmount);
 
-    function totalAdminFees() external view override returns (uint256) {}
+        _mint(msg.sender, underlyingAmount.divWadDown(exchangeRateStored()));
 
-    function fuseFeeMantissa() external view override returns (uint256) {}
+        return 0;
+    }
 
-    function mint(uint256 amount) external override returns (uint256) {}
+    function borrow(uint256 underlyingAmount) external override returns (uint256) {
+        borrowBalanceCurrent[msg.sender] += underlyingAmount;
 
-    function borrow(uint256 amount) external override returns (uint256) {}
+        underlying.safeTransfer(msg.sender, underlyingAmount);
 
-    function adminFeeMantissa() external view override returns (uint256) {}
+        return 0;
+    }
 
-    function exchangeRateStored() external view override returns (uint256) {}
+    function repayBorrow(uint256 underlyingAmount) external override returns (uint256) {
+        borrowBalanceCurrent[msg.sender] -= underlyingAmount;
 
-    function accrualBlockNumber() external view override returns (uint256) {}
+        underlying.safeTransferFrom(msg.sender, address(this), underlyingAmount);
 
-    function repayBorrow(uint256 amount) external override returns (uint256) {}
+        return 0;
+    }
 
-    function reserveFactorMantissa() external view override returns (uint256) {}
+    function redeemUnderlying(uint256 underlyingAmount) external override returns (uint256) {
+        _burn(msg.sender, underlyingAmount.divWadDown(exchangeRateStored()));
 
-    function redeemUnderlying(uint256 amount) external override returns (uint256) {}
+        underlying.safeTransfer(msg.sender, underlyingAmount);
 
-    function borrowBalanceCurrent(address user) external override returns (uint256) {}
+        return 0;
+    }
 
-    function repayBorrowBehalf(address, uint256) external override returns (uint256) {}
+    function repayBorrowBehalf(address user, uint256 underlyingAmount) external override returns (uint256) {
+        borrowBalanceCurrent[user] -= underlyingAmount;
 
-    function balanceOfUnderlying(address) external override returns (uint256) {}
+        underlying.safeTransferFrom(user, address(this), underlyingAmount);
 
-    function interestRateModel() external view override returns (InterestRateModel) {}
+        return 0;
+    }
 
-    function initialExchangeRateMantissa() external view override returns (uint256) {}
+    function balanceOfUnderlying(address user) external view override returns (uint256) {
+        return balanceOf[user].mulWadDown(exchangeRateStored());
+    }
+
+    function exchangeRateStored() public view override returns (uint256) {
+        return 10**underlying.decimals();
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                              CONSTRUCTOR
+    //////////////////////////////////////////////////////////////*/
+
+    constructor(ERC20 _underlying)
+        ERC20(
+            string(abi.encodePacked("Compound ", _underlying.name())),
+            string(abi.encodePacked("c", _underlying.symbol)),
+            _underlying.decimals()
+        )
+    {
+        underlying = _underlying;
+    }
 }

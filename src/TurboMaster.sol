@@ -149,17 +149,17 @@ contract TurboMaster is Auth {
 
     /// @notice Emitted when a new Safe is created.
     /// @param user The user who created the Safe.
-    /// @param underlying The underlying token of the Safe.
+    /// @param asset The asset of the Safe.
     /// @param safe The newly deployed Safe contract.
     /// @param id The index of the Safe in the safes array.
-    event TurboSafeCreated(address indexed user, ERC20 indexed underlying, TurboSafe safe, uint256 id);
+    event TurboSafeCreated(address indexed user, ERC20 indexed asset, TurboSafe safe, uint256 id);
 
-    /// @notice Creates a new Turbo Safe which supports a specific underlying token.
-    /// @param underlying The ERC20 token that the Safe should accept.
-    /// @return safe The newly deployed Turbo Safe which accepts the provided underlying token.
-    function createSafe(ERC20 underlying) external requiresAuth returns (TurboSafe safe, uint256 id) {
-        // Create a new Safe using the default authority and provided underlying token.
-        safe = new TurboSafe(msg.sender, defaultSafeAuthority, underlying);
+    /// @notice Creates a new Turbo Safe which supports a specific asset.
+    /// @param asset The ERC20 token that the Safe should accept.
+    /// @return safe The newly deployed Turbo Safe which accepts the provided asset.
+    function createSafe(ERC20 asset) external requiresAuth returns (TurboSafe safe, uint256 id) {
+        // Create a new Safe using the default authority and provided asset.
+        safe = new TurboSafe(msg.sender, defaultSafeAuthority, asset);
 
         // Add the safe to the list of Safes.
         safes.push(safe);
@@ -173,7 +173,7 @@ contract TurboMaster is Auth {
         // Store the id/index of the new Safe.
         getSafeId[safe] = id;
 
-        emit TurboSafeCreated(msg.sender, underlying, safe, id);
+        emit TurboSafeCreated(msg.sender, asset, safe, id);
 
         // Prepare a users array to whitelist the Safe.
         address[] memory users = new address[](1);
@@ -192,11 +192,11 @@ contract TurboMaster is Auth {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Callback triggered whenever a Safe boosts a Vault.
-    /// @param underlying The underlying token of the Safe.
+    /// @param asset The asset of the Safe.
     /// @param vault The Vault that was boosted.
     /// @param feiAmount The amount of Fei used to boost the Vault.
     function onSafeBoost(
-        ERC20 underlying,
+        ERC20 asset,
         ERC4626 vault,
         uint256 feiAmount
     ) external {
@@ -222,8 +222,8 @@ contract TurboMaster is Auth {
 
             // Update the total amount of Fei boosted against the collateral type.
             // Cannot overflow because a collateral type's total will never be greater than global total.
-            getTotalBoostedAgainstCollateral[underlying] = (newTotalBoostedAgainstCollateral =
-                getTotalBoostedAgainstCollateral[underlying] +
+            getTotalBoostedAgainstCollateral[asset] = (newTotalBoostedAgainstCollateral =
+                getTotalBoostedAgainstCollateral[asset] +
                 feiAmount);
         }
 
@@ -231,7 +231,7 @@ contract TurboMaster is Auth {
         require(
             booster.canSafeBoostVault(
                 safe,
-                underlying,
+                asset,
                 vault,
                 feiAmount,
                 newTotalBoostedForVault,
@@ -242,11 +242,11 @@ contract TurboMaster is Auth {
     }
 
     /// @notice Callback triggered whenever a Safe withdraws from a Vault.
-    /// @param underlying The underlying token of the Safe.
+    /// @param asset The asset of the Safe.
     /// @param vault The Vault that was withdrawn from.
     /// @param feiAmount The amount of Fei withdrawn from the Vault.
     function onSafeLess(
-        ERC20 underlying,
+        ERC20 asset,
         ERC4626 vault,
         uint256 feiAmount
     ) external {
@@ -267,7 +267,36 @@ contract TurboMaster is Auth {
 
             // Update the total amount of Fei boosted against the collateral type.
             // Cannot underflow as the Safe validated the withdrawal amount previously.
-            getTotalBoostedAgainstCollateral[underlying] -= feiAmount;
+            getTotalBoostedAgainstCollateral[asset] -= feiAmount;
+        }
+    }
+
+    /// @notice Callback triggered whenever a Safe harvests from a Vault.
+    /// @param asset The asset of the Safe.
+    /// @param vault The Vault that was harvested from.
+    /// @param feiAmount The amount of Fei accrued as interest to the Safe.
+    function onSafeSlurp(
+        ERC20 asset,
+        ERC4626 vault,
+        uint256 feiAmount
+    ) external {
+        // Get the caller as a Safe instance.
+        TurboSafe safe = TurboSafe(msg.sender);
+
+        // Ensure the Safe was created by this Master.
+        require(getSafeId[safe] != 0, "INVALID_SAFE");
+
+        // Update the total amount of Fei being using to boost Vaults.
+        totalBoosted += feiAmount;
+
+        unchecked {
+            // Update the total amount of Fei being using to boost the Vault.
+            // Cannot overflow because a Safe's total will never be greater than global total.
+            getTotalBoostedForVault[vault] += feiAmount;
+
+            // Update the total amount of Fei boosted against the collateral type.
+            // Cannot overflow because a collateral type's total will never be greater than global total.
+            getTotalBoostedAgainstCollateral[asset] += feiAmount;
         }
     }
 
