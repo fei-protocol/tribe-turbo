@@ -4,6 +4,7 @@ pragma solidity 0.8.10;
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {Auth, Authority} from "solmate/auth/Auth.sol";
 import {ReentrancyGuard} from "solmate/utils/ReentrancyGuard.sol";
+import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 
 import {Fei} from "../interfaces/Fei.sol";
 import {CERC20} from "../interfaces/CERC20.sol";
@@ -15,6 +16,8 @@ import {TurboMaster} from "../TurboMaster.sol";
 /// @author Transmissions11
 /// @notice Atomic impounder module.
 contract TurboGibber is Auth, ReentrancyGuard {
+    using SafeTransferLib for Fei;
+
     /*///////////////////////////////////////////////////////////////
                                IMMUTABLES
     //////////////////////////////////////////////////////////////*/
