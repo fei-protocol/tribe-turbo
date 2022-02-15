@@ -133,6 +133,7 @@ contract TurboMaster is Auth {
     mapping(ERC20 => uint256) public getTotalBoostedAgainstCollateral;
 
     /// @notice An array of all Safes created by the Master.
+    /// @dev The first Safe is purposely invalid to prevent any Safes from having an id of 0.
     TurboSafe[] public safes;
 
     /// @notice Returns all Safes created by the Master.
