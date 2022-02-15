@@ -132,7 +132,7 @@ contract TurboSafe is Auth, ERC4626, ReentrancyGuard {
                              ERC4626 LOGIC
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Called before any type of deposit occurs.
+    /// @notice Called after any type of deposit occurs.
     /// @param assetAmount The amount of assets being deposited.
     /// @dev Using requiresAuth here prevents unauthorized users from depositing.
     function afterDeposit(uint256 assetAmount, uint256) internal override nonReentrant requiresAuth {
@@ -159,7 +159,7 @@ contract TurboSafe is Auth, ERC4626, ReentrancyGuard {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Emitted when a Vault is boosted by the Safe.
-    /// @param user The user who slurped the Vault.
+    /// @param user The user who boosted the Vault.
     /// @param vault The Vault that was boosted.
     /// @param feiAmount The amount of Fei that was boosted to the Vault.
     event VaultBoosted(address indexed user, ERC4626 indexed vault, uint256 feiAmount);
@@ -198,7 +198,7 @@ contract TurboSafe is Auth, ERC4626, ReentrancyGuard {
     }
 
     /// @notice Emitted when a Vault is withdrawn from by the Safe.
-    /// @param user The user who slurped the Vault.
+    /// @param user The user who lessed the Vault.
     /// @param vault The Vault that was withdrawn from.
     /// @param feiAmount The amount of Fei that was withdrawn from the Vault.
     event VaultLessened(address indexed user, ERC4626 indexed vault, uint256 feiAmount);
