@@ -74,7 +74,7 @@ contract TurboSavior is Auth, ReentrancyGuard {
     /// @notice Sets the minimum debt percentage.
     /// @param newMinDebtPercentageForSaving The new minimum debt percentage.
     function setMinDebtPercentageForSaving(uint256 newMinDebtPercentageForSaving) external requiresAuth {
-        // A debt percentage over 100% makes no sense.
+        // A minimum debt percentage over 100% makes no sense.
         require(newMinDebtPercentageForSaving <= 1e18, "PERCENT_TOO_HIGH");
 
         // Update the minimum debt percentage.
