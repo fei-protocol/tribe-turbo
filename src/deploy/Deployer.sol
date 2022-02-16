@@ -12,6 +12,7 @@ import {TurboGibber} from "../modules/TurboGibber.sol";
 import {TurboBooster} from "../modules/TurboBooster.sol";
 import {TurboSavior} from "../modules/TurboSavior.sol";
 
+import {TurboRouter, IWETH9} from "../TurboRouter.sol";
 import {TurboMaster, TurboSafe, ERC4626} from "../TurboMaster.sol";
 
 import {TimelockController} from "@openzeppelin/governance/TimelockController.sol";
@@ -20,6 +21,7 @@ import {TimelockController} from "@openzeppelin/governance/TimelockController.so
 contract Deployer {
     Comptroller pool = Comptroller(0xc62ceB397a65edD6A68715b2d3922dEE0D63F45c);
     ERC20 fei = ERC20(0x956F47F50A910163D8BF957Cf5846D573E7f87CA);
+    IWETH9 weth = IWETH9(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
 
     address constant feiDAOTimelock = 0xd51dbA7a94e1adEa403553A8235C302cEbF41a3c;
 
@@ -33,6 +35,7 @@ contract Deployer {
     TurboMaster public master;
     TurboGibber public gibber;
     TurboSavior public savior;
+    TurboRouter public router;
 
     constructor() {
         deploy();
@@ -73,10 +76,12 @@ contract Deployer {
             master, address(this), Authority(address(0))
         );
 
+        router = new TurboRouter(master, "", weth);
+
         master.setDefaultSafeAuthority(
             configureDefaultAuthority(
                 address(turboTimelock),
-                address(this),
+                address(router),
                 address(savior)
             )
         );
@@ -84,12 +89,10 @@ contract Deployer {
         savior.setAuthority(master.defaultSafeAuthority());
         savior.setOwner(feiDAOTimelock);
 
-        // TODO Deploy router. Gibber has minter. Grant TURBO_POD_ROLE to Turbo pod.
-    
         master.setOwner(address(turboTimelock));
     }
 
-    function configureDefaultAuthority(address owner, address router, address savior) internal returns (MultiRolesAuthority) {
+    function configureDefaultAuthority(address owner, address _router, address _savior) internal returns (MultiRolesAuthority) {
         MultiRolesAuthority defaultAuthority = new MultiRolesAuthority(address(this), Authority(address(0)));
         defaultAuthority.setRoleCapability(ROUTER_ROLE, TurboSafe.boost.selector, true);
         defaultAuthority.setRoleCapability(ROUTER_ROLE, TurboSafe.less.selector, true);
@@ -100,11 +103,11 @@ contract Deployer {
         defaultAuthority.setRoleCapability(ROUTER_ROLE, ERC4626.withdraw.selector, true);
         defaultAuthority.setRoleCapability(ROUTER_ROLE, ERC4626.redeem.selector, true);
 
-        defaultAuthority.setUserRole(router, ROUTER_ROLE, true);
+        defaultAuthority.setUserRole(_router, ROUTER_ROLE, true);
 
         defaultAuthority.setRoleCapability(SAVIOR_ROLE, TurboSafe.less.selector, true);
 
-        defaultAuthority.setUserRole(savior, SAVIOR_ROLE, true);
+        defaultAuthority.setUserRole(_savior, SAVIOR_ROLE, true);
 
         defaultAuthority.setPublicCapability(TurboSavior.save.selector, true);
         defaultAuthority.setOwner(owner);
