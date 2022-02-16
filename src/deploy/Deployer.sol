@@ -76,6 +76,8 @@ contract Deployer {
             master, address(this), Authority(address(0))
         );
 
+        savior.setMinDebtPercentageForSaving(80e16); // 80%
+
         router = new TurboRouter(master, "", weth);
 
         master.setDefaultSafeAuthority(

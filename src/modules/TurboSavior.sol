@@ -115,7 +115,8 @@ contract TurboSavior is Auth, ReentrancyGuard {
 
         // Compute the value of the Safe's collateral. Rounded down to favor saving.
         uint256 borrowLimit = assetTurboCToken
-            .balanceOfUnderlying(address(safe))
+            .balanceOf(address(safe))
+            .mulWadDown(assetTurboCToken.exchangeRateStored())
             .mulWadDown(collateralFactor)
             .mulWadDown(pool.oracle().getUnderlyingPrice(assetTurboCToken));
 

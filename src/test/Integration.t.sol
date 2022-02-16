@@ -80,8 +80,8 @@ contract Integration is DSTestPlus {
 
         require(fFEI.mint(10_000_000e18) == 0, "mint fails");
 
-        booster.setBoostCapForCollateral(tribe, 1_000_000e18); // 1M boost cap TRIBE
-        booster.setBoostCapForVault(strategy, 1_000_000e18); // 1M boost cap for vault
+        booster.setBoostCapForCollateral(tribe, 2_000_000e18); // 1M boost cap TRIBE
+        booster.setBoostCapForVault(strategy, 2_000_000e18); // 1M boost cap for vault
 
         core.allocateTribe(address(this), 10_000_000e18);
         hevm.stopPrank();
@@ -133,13 +133,11 @@ contract Integration is DSTestPlus {
 
         assertEq(safe.balanceOf(address(this)), 2_000_000e18);
 
-        safe.boost(strategy, 100_000e18);
+        safe.boost(strategy, 1_100_000e18);
+        require(strategy.balanceOf(address(safe)) == 1_100_000e18);
 
-        // TODO figure out why savior fails in balanceOfUnderlying
-        // savior.save(safe, strategy, 50_000e18);
-    }
+        savior.save(safe, strategy, 1_000_000e18);
 
-    function testGibber() public {
-        // TODO
+        require(strategy.balanceOf(address(safe)) == 100_000e18);
     }
 }
