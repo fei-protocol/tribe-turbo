@@ -54,7 +54,7 @@ contract MockCToken is CERC20 {
     function repayBorrowBehalf(address user, uint256 underlyingAmount) external override returns (uint256) {
         borrowBalanceCurrent[user] -= underlyingAmount;
 
-        underlying.safeTransferFrom(user, address(this), underlyingAmount);
+        underlying.safeTransferFrom(msg.sender, address(this), underlyingAmount);
 
         return 0;
     }

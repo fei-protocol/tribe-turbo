@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.10;
 
-import {ERC20} from "solmate/tokens/ERC20.sol";
 import {Authority} from "solmate/auth/Auth.sol";
 import {ERC4626} from "solmate/mixins/ERC4626.sol";
 import {DSTestPlus} from "solmate/test/utils/DSTestPlus.sol";
@@ -15,7 +14,6 @@ import {MockFuseAdmin} from "./mocks/MockFuseAdmin.sol";
 import {MockComptroller} from "./mocks/MockComptroller.sol";
 
 import {TurboClerk} from "../modules/TurboClerk.sol";
-import {TurboGibber} from "../modules/TurboGibber.sol";
 import {TurboBooster} from "../modules/TurboBooster.sol";
 
 import {TurboSafe} from "../TurboSafe.sol";

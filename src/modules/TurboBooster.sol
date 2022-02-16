@@ -38,7 +38,7 @@ contract TurboBooster is Auth {
         // Update freeze status.
         frozen = freeze;
 
-        emit FreezeStatusUpdated(msg.sender, frozen);
+        emit FreezeStatusUpdated(msg.sender, freeze);
     }
 
     /*///////////////////////////////////////////////////////////////

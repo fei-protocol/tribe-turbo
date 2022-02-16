@@ -13,7 +13,6 @@ import {MockComptroller} from "./mocks/MockComptroller.sol";
 
 import {TurboClerk} from "../modules/TurboClerk.sol";
 import {TurboBooster} from "../modules/TurboBooster.sol";
-import {TurboGibber} from "../modules/TurboGibber.sol";
 
 import {TurboSafe} from "../TurboSafe.sol";
 import {TurboMaster} from "../TurboMaster.sol";

@@ -50,6 +50,9 @@ contract TurboGibber is Auth, ReentrancyGuard {
         fei = Fei(address(master.fei()));
 
         feiTurboCToken = master.pool().cTokensByUnderlying(fei);
+
+        // Preemptively approve to the Fei cToken in the Turbo Fuse Pool.
+        fei.safeApprove(address(feiTurboCToken), type(uint256).max);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -82,9 +85,6 @@ contract TurboGibber is Auth, ReentrancyGuard {
         // Mint the Fei amount requested.
         fei.mint(address(this), feiAmount);
 
-        // Approve the Fei amount to the Fei cToken.
-        fei.safeApprove(address(feiTurboCToken), feiAmount);
-
         // Repay the safe's Fei debt with the minted Fei, ensuring to catch cToken errors.
         require(feiTurboCToken.repayBorrowBehalf(address(safe), feiAmount) == 0, "REPAY_FAILED");
 
@@ -100,21 +100,18 @@ contract TurboGibber is Auth, ReentrancyGuard {
         require(master.getSafeId(safe) != 0);
 
         // Get the asset cToken in the Turbo Fuse Pool.
-        CERC20 assetCToken = safe.assetTurboCToken();
+        CERC20 assetTurboCToken = safe.assetTurboCToken();
 
         // Get the amount of assets to impound from the Safe.
-        uint256 assetAmount = assetCToken.balanceOfUnderlying(address(safe));
+        uint256 assetAmount = assetTurboCToken.balanceOfUnderlying(address(safe));
 
         // Get the amount of Fei debt to repay for the Safe.
-        uint256 feiAmount = assetCToken.borrowBalanceCurrent(address(safe));
+        uint256 feiAmount = feiTurboCToken.borrowBalanceCurrent(address(safe));
 
         emit ImpoundExecuted(msg.sender, safe, feiAmount, assetAmount);
 
         // Mint the Fei amount requested.
         fei.mint(address(this), feiAmount);
-
-        // Approve the Fei amount to the Fei cToken.
-        fei.safeApprove(address(feiTurboCToken), feiAmount);
 
         // Repay the safe's Fei debt with the minted Fei, ensuring to catch cToken errors.
         require(feiTurboCToken.repayBorrowBehalf(address(safe), feiAmount) == 0, "REPAY_FAILED");
