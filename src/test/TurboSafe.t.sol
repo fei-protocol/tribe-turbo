@@ -223,8 +223,7 @@ contract TurboSafeTest is DSTestPlus {
         uint128 underlyingAmount,
         uint128 feiMintAmount,
         uint128 feiAmount,
-        address to,
-        ERC4626 invalidVault
+        address to
     ) public {
         feiAmount = uint128(bound(feiAmount, 0, feiMintAmount));
 
