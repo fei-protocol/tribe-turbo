@@ -87,30 +87,40 @@ contract TurboSaviorTest is DSTestPlus {
                               SAVE TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function testImpound(
-        uint128 depositAmount,
-        uint128 borrowAmount,
-        uint128 feiPrice,
-        uint128 assetPrice,
-        uint128 assetCollateralFactor,
-        uint128 minDebtPercentage,
-        uint128 feiAmount,
+    function testSave(
+        uint64 depositAmount,
+        uint64 borrowAmount,
+        uint64 feiAmount,
         address to
     ) public {
-        // if (depositAmount == 0) depositAmount = 1;
-        // if (borrowAmount == 0) borrowAmount = 1;
-        // if (feiPrice == 0) feiPrice = 1;
-        // if (assetPrice == 0) assetPrice = 1;
-        // if (feiAmount == 0) feiAmount = 1;
-        // assetCollateralFactor = uint128(bound(assetCollateralFactor, 1, 1e18));
-        // minDebtPercentage = uint128(bound(assetCollateralFactor, 1, 1e18));
-        // safe.deposit(depositAmount, to);
-        // fei.mint(address(feiCToken), borrowAmount);
-        // booster.setBoostCapForVault(vault, borrowAmount);
-        // booster.setBoostCapForCollateral(asset, borrowAmount);
-        // safe.boost(vault, borrowAmount);
-        // oracle.setUnderlyingPrice(feiCToken, feiPrice);
-        // oracle.setUnderlyingPrice(feiCToken, assetPrice);
-        // savior.save(safe, vault, feiAmount);
+        if (depositAmount == 0) depositAmount = 1;
+        if (feiAmount == 0) feiAmount = 1;
+
+        borrowAmount = uint64(bound(borrowAmount, 1, depositAmount));
+        feiAmount = uint64(bound(feiAmount, 1, borrowAmount));
+
+        safe.deposit(depositAmount, to);
+
+        fei.mint(address(feiCToken), borrowAmount);
+
+        booster.setBoostCapForVault(vault, borrowAmount);
+        booster.setBoostCapForCollateral(asset, borrowAmount);
+
+        safe.boost(vault, borrowAmount);
+
+        oracle.setUnderlyingPrice(assetCToken, 2e18);
+        oracle.setUnderlyingPrice(feiCToken, 1e18);
+
+        comptroller.setMarket(assetCToken, MockComptroller.Market(true, 0.75e18));
+
+        uint256 borrowLimit = assetCToken.balanceOfUnderlying(address(safe)).mulWadDown(0.75e18).mulWadDown(2e18);
+
+        uint256 debtValue = feiCToken.borrowBalanceCurrent(address(safe)).mulWadUp(1e18);
+
+        if (borrowLimit == 0) return;
+
+        savior.setMinDebtPercentageForSaving(debtValue.divWadUp(borrowLimit));
+
+        savior.save(safe, vault, feiAmount);
     }
 }
