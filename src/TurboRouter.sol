@@ -35,7 +35,7 @@ contract TurboRouter is ERC4626RouterBase, ENSReverseRecord {
     }
 
     modifier authenticate(address target) {
-        require(msg.sender == Auth(target).owner(), "not authed");
+        require(msg.sender == Auth(target).owner(), "NOT_AUTHED");
 
         _;
     }
