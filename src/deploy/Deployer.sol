@@ -30,9 +30,9 @@ contract Deployer {
     uint8 public constant SAVIOR_ROLE = 3;
     uint8 public constant TURBO_POD_ROLE = 4;
 
-    TurboMaster master;
-    TurboGibber gibber;
-    TurboSavior savior;
+    TurboMaster public master;
+    TurboGibber public gibber;
+    TurboSavior public savior;
 
     constructor() {
         deploy();
@@ -52,7 +52,10 @@ contract Deployer {
             turboAuthority
         );
 
-        TurboClerk clerk = new TurboClerk(feiDAOTimelock, Authority(address(0)));
+        TurboClerk clerk = new TurboClerk(address(this), Authority(address(0)));
+
+        clerk.setDefaultFeePercentage(90e16);
+        clerk.setOwner(feiDAOTimelock);
 
         master.setClerk(clerk);
 
@@ -67,7 +70,7 @@ contract Deployer {
         turboAuthority.setUserRole(address(gibber), GIBBER_ROLE, true);
 
         savior = new TurboSavior(
-            master, feiDAOTimelock, Authority(address(0))
+            master, address(this), Authority(address(0))
         );
 
         master.setDefaultSafeAuthority(
@@ -77,6 +80,9 @@ contract Deployer {
                 address(savior)
             )
         );
+
+        savior.setAuthority(master.defaultSafeAuthority());
+        savior.setOwner(feiDAOTimelock);
 
         // TODO Deploy router. Gibber has minter. Grant TURBO_POD_ROLE to Turbo pod.
     
@@ -100,6 +106,7 @@ contract Deployer {
 
         defaultAuthority.setUserRole(savior, SAVIOR_ROLE, true);
 
+        defaultAuthority.setPublicCapability(TurboSavior.save.selector, true);
         defaultAuthority.setOwner(owner);
         return defaultAuthority;
     }
