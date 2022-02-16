@@ -9,4 +9,18 @@ contract MockFuseAdmin is FuseAdmin {
     function _setWhitelistStatuses(address[] calldata users, bool[] calldata enabled) external {
         for (uint256 i = 0; i < users.length; i++) isWhitelisted[users[i]] = enabled[i];
     }
+
+    function _deployMarket(
+        address underlying,
+        address irm,
+        string calldata name,
+        string calldata symbol,
+        address impl,
+        bytes calldata data,
+        uint256 reserveFactor,
+        uint256 adminFee,
+        uint256 collateralFactorMantissa
+    ) external {
+        
+    }
 }
