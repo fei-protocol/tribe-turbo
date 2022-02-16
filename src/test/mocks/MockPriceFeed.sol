@@ -7,7 +7,7 @@ import {PriceFeed} from "../../interfaces/PriceFeed.sol";
 contract MockPriceFeed is PriceFeed {
     mapping(CERC20 => uint256) public override getUnderlyingPrice;
 
-    function setUnderlyingPrice(CERC20 collateral, uint256 priceFeed) external {
-        getUnderlyingPrice[collateral] = priceFeed;
+    function setUnderlyingPrice(CERC20 cToken, uint256 priceFeed) external {
+        getUnderlyingPrice[cToken] = priceFeed;
     }
 }
