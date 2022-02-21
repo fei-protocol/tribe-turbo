@@ -57,7 +57,7 @@ contract TurboSafe is Auth, ERC4626, ReentrancyGuard {
         ERC4626(
             _asset,
             // ex: Dai Stablecoin Turbo Safe
-            string(abi.encodePacked(_asset.name(), " Turbo Safe")),
+            string(abi.encodePacked(_asset.name(), "Turbo Safe")),
             // ex: tsDAI
             string(abi.encodePacked("ts", _asset.symbol()))
         )
