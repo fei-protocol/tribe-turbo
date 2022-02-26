@@ -167,7 +167,6 @@ contract TurboSafe is Auth, ERC4626, ReentrancyGuard {
     /// @notice Borrow Fei from the Turbo Fuse Pool and deposit it into an authorized Vault.
     /// @param vault The Vault to deposit the borrowed Fei into.
     /// @param feiAmount The amount of Fei to borrow and supply into the Vault.
-    /// @dev Automatically accrues any fees earned by the Safe in the Vault to the Master.
     function boost(ERC4626 vault, uint256 feiAmount) external nonReentrant requiresAuth {
         // Ensure the Vault accepts Fei asset.
         require(vault.asset() == fei, "NOT_FEI");
@@ -203,7 +202,6 @@ contract TurboSafe is Auth, ERC4626, ReentrancyGuard {
     /// @notice Withdraw Fei from a deposited Vault and use it to repay debt in the Turbo Fuse Pool.
     /// @param vault The Vault to withdraw the Fei from.
     /// @param feiAmount The amount of Fei to withdraw from the Vault and repay in the Turbo Fuse Pool.
-    /// @dev Automatically accrues any fees earned by the Safe in the Vault to the Master.
     function less(ERC4626 vault, uint256 feiAmount) external nonReentrant requiresLocalOrMasterAuth {
         // Update the total Fei deposited into the Vault proportionately.
         getTotalFeiBoostedForVault[vault] -= feiAmount;
@@ -321,7 +319,6 @@ contract TurboSafe is Auth, ERC4626, ReentrancyGuard {
     /// @notice Impound a specific amount of a Safe's collateral.
     /// @param to The address to send the impounded collateral to.
     /// @param assetAmount The amount of the asset to impound.
-    /// @dev Can only be called by the Gibber, not by the Safe owner.
     /// @dev Debt must be repaid in advance, or the redemption will fail.
     function gib(address to, uint256 assetAmount) external nonReentrant requiresLocalOrMasterAuth {
         emit SafeGibbed(msg.sender, to, assetAmount);
