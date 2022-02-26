@@ -127,7 +127,7 @@ contract TurboSavior is Auth, ReentrancyGuard {
 
         // Ensure the Safe's debt percentage is high enough to justify saving, otherwise revert.
         require(
-            borrowLimit != 0 && debtValue.divWadUp(borrowLimit) >= minDebtPercentageForSaving,
+            borrowLimit != 0 && debtValue >= minDebtPercentageForSaving.mulWadDown(borrowLimit),
             "DEBT_PERCENT_TOO_LOW"
         );
 
