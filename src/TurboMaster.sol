@@ -216,17 +216,15 @@ contract TurboMaster is Auth {
         // Cache the new total boosted against the Vault's collateral.
         uint256 newTotalBoostedAgainstCollateral;
 
-        unchecked {
-            // Update the total amount of Fei being using to boost the Vault.
-            // Cannot overflow because a Safe's total will never be greater than global total.
-            getTotalBoostedForVault[vault] = (newTotalBoostedForVault = getTotalBoostedForVault[vault] + feiAmount);
+        // Update the total amount of Fei being using to boost the Vault.
+        // Cannot overflow because a Safe's total will never be greater than global total.
+        getTotalBoostedForVault[vault] = (newTotalBoostedForVault = getTotalBoostedForVault[vault] + feiAmount);
 
-            // Update the total amount of Fei boosted against the collateral type.
-            // Cannot overflow because a collateral type's total will never be greater than global total.
-            getTotalBoostedAgainstCollateral[asset] = (newTotalBoostedAgainstCollateral =
-                getTotalBoostedAgainstCollateral[asset] +
-                feiAmount);
-        }
+        // Update the total amount of Fei boosted against the collateral type.
+        // Cannot overflow because a collateral type's total will never be greater than global total.
+        getTotalBoostedAgainstCollateral[asset] = (newTotalBoostedAgainstCollateral =
+            getTotalBoostedAgainstCollateral[asset] +
+            feiAmount);
 
         // Check with the booster that the Safe is allowed to boost the Vault using this amount of Fei.
         require(
@@ -257,19 +255,17 @@ contract TurboMaster is Auth {
         // Ensure the Safe was created by this Master.
         require(getSafeId[safe] != 0, "INVALID_SAFE");
 
-        unchecked {
-            // Update the total amount of Fei being using to boost the Vault.
-            // Cannot underflow as the Safe validated the withdrawal amount before.
-            getTotalBoostedForVault[vault] -= feiAmount;
+        // Update the total amount of Fei being using to boost the Vault.
+        // Cannot underflow as the Safe validated the withdrawal amount before.
+        getTotalBoostedForVault[vault] -= feiAmount;
 
-            // Update the total amount of Fei being using to boost Vaults.
-            // Cannot underflow as the Safe validated the withdrawal amount earlier.
-            totalBoosted -= feiAmount;
+        // Update the total amount of Fei being using to boost Vaults.
+        // Cannot underflow as the Safe validated the withdrawal amount earlier.
+        totalBoosted -= feiAmount;
 
-            // Update the total amount of Fei boosted against the collateral type.
-            // Cannot underflow as the Safe validated the withdrawal amount previously.
-            getTotalBoostedAgainstCollateral[asset] -= feiAmount;
-        }
+        // Update the total amount of Fei boosted against the collateral type.
+        // Cannot underflow as the Safe validated the withdrawal amount previously.
+        getTotalBoostedAgainstCollateral[asset] -= feiAmount;
     }
 
     /// @notice Callback triggered whenever a Safe harvests from a Vault.
@@ -290,15 +286,13 @@ contract TurboMaster is Auth {
         // Update the total amount of Fei being using to boost Vaults.
         totalBoosted += feiAmount;
 
-        unchecked {
-            // Update the total amount of Fei being using to boost the Vault.
-            // Cannot overflow because a Safe's total will never be greater than global total.
-            getTotalBoostedForVault[vault] += feiAmount;
+        // Update the total amount of Fei being using to boost the Vault.
+        // Cannot overflow because a Safe's total will never be greater than global total.
+        getTotalBoostedForVault[vault] += feiAmount;
 
-            // Update the total amount of Fei boosted against the collateral type.
-            // Cannot overflow because a collateral type's total will never be greater than global total.
-            getTotalBoostedAgainstCollateral[asset] += feiAmount;
-        }
+        // Update the total amount of Fei boosted against the collateral type.
+        // Cannot overflow because a collateral type's total will never be greater than global total.
+        getTotalBoostedAgainstCollateral[asset] += feiAmount;
     }
 
     /*///////////////////////////////////////////////////////////////

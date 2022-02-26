@@ -179,11 +179,9 @@ contract TurboSafe is Auth, ERC4626, ReentrancyGuard {
         // Increase the boost total proportionately.
         totalFeiBoosted += feiAmount;
 
-        unchecked {
-            // Update the total Fei deposited into the Vault proportionately.
-            // Cannot overflow because the total cannot be less than a single Vault.
-            getTotalFeiBoostedForVault[vault] += feiAmount;
-        }
+        // Update the total Fei deposited into the Vault proportionately.
+        // Cannot overflow because the total cannot be less than a single Vault.
+        getTotalFeiBoostedForVault[vault] += feiAmount;
 
         emit VaultBoosted(msg.sender, vault, feiAmount);
 
@@ -211,11 +209,9 @@ contract TurboSafe is Auth, ERC4626, ReentrancyGuard {
         // Update the total Fei deposited into the Vault proportionately.
         getTotalFeiBoostedForVault[vault] -= feiAmount;
 
-        unchecked {
-            // Decrease the boost total proportionately.
-            // Cannot underflow because the total cannot be less than a single Vault.
-            totalFeiBoosted -= feiAmount;
-        }
+        // Decrease the boost total proportionately.
+        // Cannot underflow because the total cannot be less than a single Vault.
+        totalFeiBoosted -= feiAmount;
 
         emit VaultLessened(msg.sender, vault, feiAmount);
 
@@ -274,11 +270,9 @@ contract TurboSafe is Auth, ERC4626, ReentrancyGuard {
         // Increase the boost total proportionately.
         totalFeiBoosted += safeInterestAmount;
 
-        unchecked {
-            // Update the total Fei held in the Vault proportionately.
-            // Cannot overflow because the total cannot be less than a single Vault.
-            getTotalFeiBoostedForVault[vault] += safeInterestAmount;
-        }
+        // Update the total Fei held in the Vault proportionately.
+        // Cannot overflow because the total cannot be less than a single Vault.
+        getTotalFeiBoostedForVault[vault] += safeInterestAmount;
 
         emit VaultSlurped(msg.sender, vault, protocolFeeAmount, safeInterestAmount);
 
