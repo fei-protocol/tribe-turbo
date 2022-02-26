@@ -217,11 +217,9 @@ contract TurboMaster is Auth {
         uint256 newTotalBoostedAgainstCollateral;
 
         // Update the total amount of Fei being using to boost the Vault.
-        // Cannot overflow because a Safe's total will never be greater than global total.
         getTotalBoostedForVault[vault] = (newTotalBoostedForVault = getTotalBoostedForVault[vault] + feiAmount);
 
         // Update the total amount of Fei boosted against the collateral type.
-        // Cannot overflow because a collateral type's total will never be greater than global total.
         getTotalBoostedAgainstCollateral[asset] = (newTotalBoostedAgainstCollateral =
             getTotalBoostedAgainstCollateral[asset] +
             feiAmount);
@@ -256,15 +254,12 @@ contract TurboMaster is Auth {
         require(getSafeId[safe] != 0, "INVALID_SAFE");
 
         // Update the total amount of Fei being using to boost the Vault.
-        // Cannot underflow as the Safe validated the withdrawal amount before.
         getTotalBoostedForVault[vault] -= feiAmount;
 
         // Update the total amount of Fei being using to boost Vaults.
-        // Cannot underflow as the Safe validated the withdrawal amount earlier.
         totalBoosted -= feiAmount;
 
         // Update the total amount of Fei boosted against the collateral type.
-        // Cannot underflow as the Safe validated the withdrawal amount previously.
         getTotalBoostedAgainstCollateral[asset] -= feiAmount;
     }
 
@@ -287,11 +282,9 @@ contract TurboMaster is Auth {
         totalBoosted += feiAmount;
 
         // Update the total amount of Fei being using to boost the Vault.
-        // Cannot overflow because a Safe's total will never be greater than global total.
         getTotalBoostedForVault[vault] += feiAmount;
 
         // Update the total amount of Fei boosted against the collateral type.
-        // Cannot overflow because a collateral type's total will never be greater than global total.
         getTotalBoostedAgainstCollateral[asset] += feiAmount;
     }
 

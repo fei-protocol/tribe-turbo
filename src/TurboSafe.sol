@@ -180,7 +180,6 @@ contract TurboSafe is Auth, ERC4626, ReentrancyGuard {
         totalFeiBoosted += feiAmount;
 
         // Update the total Fei deposited into the Vault proportionately.
-        // Cannot overflow because the total cannot be less than a single Vault.
         getTotalFeiBoostedForVault[vault] += feiAmount;
 
         emit VaultBoosted(msg.sender, vault, feiAmount);
@@ -210,7 +209,6 @@ contract TurboSafe is Auth, ERC4626, ReentrancyGuard {
         getTotalFeiBoostedForVault[vault] -= feiAmount;
 
         // Decrease the boost total proportionately.
-        // Cannot underflow because the total cannot be less than a single Vault.
         totalFeiBoosted -= feiAmount;
 
         emit VaultLessened(msg.sender, vault, feiAmount);
@@ -271,7 +269,6 @@ contract TurboSafe is Auth, ERC4626, ReentrancyGuard {
         totalFeiBoosted += safeInterestAmount;
 
         // Update the total Fei held in the Vault proportionately.
-        // Cannot overflow because the total cannot be less than a single Vault.
         getTotalFeiBoostedForVault[vault] += safeInterestAmount;
 
         emit VaultSlurped(msg.sender, vault, protocolFeeAmount, safeInterestAmount);
