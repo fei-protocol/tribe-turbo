@@ -7,28 +7,70 @@ import {Auth, Authority} from "solmate/auth/Auth.sol";
 import {TurboBooster} from "./TurboBooster.sol";
 import {TurboClerk} from "./TurboClerk.sol";
 
-interface IMasterOracle {
-    function add(address[] calldata underlyings, address[] calldata _oracles)
-        external;
-
-    function changeAdmin(address newAdmin) external;
-
-    function admin() external view returns (address);
-}
-
+/** 
+ @title Turbo Admin of Turbo Fuse Pool and Turbo Timelock
+*/
 contract TurboAdmin is Auth {
-
+    /// @notice generic error thrown when comptroller call fails
     error ComptrollerError();
 
-    /// @notice the fuse comptroller
+    /// @notice the fuse comptroller associated with the TurboAdmin
     Comptroller public immutable comptroller;
 
+    /// @notice the turbo timelock
     TimelockController public immutable timelock;
+
+    /// @notice constant zero interest rate model
+    address public constant ZERO_IRM = 0xC9dB5A1034BcBcca3f59dD61dbeE31b78CeFD126;
+
+    /// @notice cToken implementation
+    address public constant CTOKEN_IMPL = 0x67Db14E73C2Dce786B5bbBfa4D010dEab4BBFCF9;
 
     /// @param _comptroller the fuse comptroller
     constructor(Comptroller _comptroller, TimelockController _timelock, Authority _authority) Auth(address(0), _authority) {
         comptroller = _comptroller;
         timelock = _timelock;
+    }
+
+    // ************ TURBO ADMIN FUNCTIONS ************
+
+    function addCollateral(
+        address underlying,
+        string calldata name,
+        string calldata symbol,
+        uint256 collateralFactorMantissa,
+        uint256 supplyCap
+    ) external requiresAuth {
+        bytes memory constructorData = abi.encode(
+            underlying,
+            address(comptroller),
+            ZERO_IRM,
+            name,
+            symbol,
+            CTOKEN_IMPL,
+            new bytes(0),
+            0, // zero admin fee
+            0 // zero reserve factor
+        );
+
+        if (
+            comptroller._deployMarket(
+                false,
+                constructorData,
+                collateralFactorMantissa
+            ) != 0
+        ) revert ComptrollerError();
+        
+        // set borrow paused
+        CERC20 cToken = comptroller.cTokensByUnderlying(ERC20(underlying));
+        _setBorrowPausedInternal(cToken, true);
+
+        CERC20[] memory markets = new CERC20[](1);
+        markets[0] = cToken;
+        uint256[] memory caps = new uint256[](1);
+        caps[0] = supplyCap;
+
+        comptroller._setMarketSupplyCaps(markets, caps);
     }
 
     // ************ BORROW GUARDIAN FUNCTIONS ************
@@ -138,7 +180,7 @@ contract TurboAdmin is Auth {
     {
         CERC20 cToken = comptroller.cTokensByUnderlying(underlying);
         require(address(cToken) != address(0), "cToken doesn't exist");
-        _setMintPausedInternal(cToken, state);
+        return _setMintPausedInternal(cToken, state);
     }
 
     function _setMintPaused(CERC20 cToken, bool state)
@@ -197,17 +239,17 @@ contract TurboAdmin is Auth {
         return comptroller._setSeizePaused(state);
     }
 
-    ///// ADMIN functions
+    // ************ FUSE ADMIN FUNCTIONS ************
 
     function oracleAdd(
         address[] calldata underlyings,
         address[] calldata _oracles
     ) external requiresAuth {
-        IMasterOracle(address(comptroller.oracle())).add(underlyings, _oracles);
+        comptroller.oracle().add(underlyings, _oracles);
     }
 
     function oracleChangeAdmin(address newAdmin) external requiresAuth {
-        IMasterOracle(address(comptroller.oracle())).changeAdmin(newAdmin);
+        comptroller.oracle().changeAdmin(newAdmin);
     }
 
     function _addRewardsDistributor(address distributor)
@@ -270,7 +312,6 @@ contract TurboAdmin is Auth {
         ) revert ComptrollerError();
     }
 
-    // TODO replace
     function _deployMarket(
         address underlying,
         address irm,
@@ -333,7 +374,7 @@ contract TurboAdmin is Auth {
         if (comptroller._acceptAdmin() != 0) revert ComptrollerError();
     }
 
-    ///// Timelock helpers
+    // ************ TIMELOCK ADMIN FUNCTIONS ************
     function schedule(address target, bytes memory data) public requiresAuth {
         _schedule(target, data);
     }

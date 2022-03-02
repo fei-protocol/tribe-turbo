@@ -11,4 +11,8 @@ interface PriceFeed {
     /// @param cToken The cToken to get the underlying price of.
     /// @return The underlying asset price scaled by 1e18.
     function getUnderlyingPrice(CERC20 cToken) external view returns (uint256);
+
+    function add(address[] calldata underlyings, address[] calldata _oracles) external;
+
+    function changeAdmin(address newAdmin) external;
 }

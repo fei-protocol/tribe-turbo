@@ -19,21 +19,57 @@ import {TurboMaster, TurboSafe, ERC4626} from "../TurboMaster.sol";
 
 import {TimelockController} from "@openzeppelin/governance/TimelockController.sol";
 
-/// @title Turbo Configurer
+/**
+ @title Turbo Configurer
+ IS INTENDED FOR MAINNET DEPLOYMENT
+
+ This contract is a helper utility to completely configure the turbo system, assuming the contracts are deployed.
+ The deployment should follow the logic in Deployer.sol.
+
+ Each function details its access control assumptions.
+ */ 
 contract Configurer {
+
+    /// @notice Fei DAO Timelock, to be granted TURBO_ADMIN_ROLE and GOVERN_ROLE
     address constant feiDAOTimelock = 0xd51dbA7a94e1adEa403553A8235C302cEbF41a3c;
-    address constant guardian = 0xd51dbA7a94e1adEa403553A8235C302cEbF41a3c;
+    
+    /// @notice Tribe Guardian, to be granted GUARDIAN_ROLE
+    address constant guardian = 0xB8f482539F2d3Ae2C9ea6076894df36D1f632775;
 
     ERC20 fei = ERC20(0x956F47F50A910163D8BF957Cf5846D573E7f87CA);
     ERC20 tribe = ERC20(0xc7283b66Eb1EB5FB86327f08e1B5816b0720212B);
 
+    /******************** ROLES ********************/
+
+    /// @notice HIGH CLEARANCE. capable of calling `gib` to impound collateral. 
     uint8 public constant GIBBER_ROLE = 1;
+    
+    /// @notice HIGH CLEARANCE. Optional module which can interact with any user's vault by default.
     uint8 public constant ROUTER_ROLE = 2;
+
+    /// @notice Capable of lessing any vault. Exposed on optional TurboSavior module.
     uint8 public constant SAVIOR_ROLE = 3;
+
+    /// @notice Operational admin of Turbo, can whitelist collaterals, strategies, and configure most parameters.
     uint8 public constant TURBO_ADMIN_ROLE = 4;
+    
+    /// @notice Pause and security Guardian role
     uint8 public constant GUARDIAN_ROLE = 5;
+    
+    /// @notice HIGH CLEARANCE. Capable of critical governance functionality on TurboAdmin such as oracle upgrades. 
     uint8 public constant GOVERN_ROLE = 6;
 
+    /******************** CONFIGURATION ********************/
+
+    /// @notice configure the turbo timelock. Requires TIMELOCK_ADMIN_ROLE over timelock.
+    function configureTimelock(TimelockController turboTimelock, TurboAdmin admin) public {
+        turboTimelock.grantRole(turboTimelock.TIMELOCK_ADMIN_ROLE(), address(admin));
+        turboTimelock.grantRole(turboTimelock.EXECUTOR_ROLE(), address(admin));
+        turboTimelock.grantRole(turboTimelock.PROPOSER_ROLE(), address(admin));
+        turboTimelock.revokeRole(turboTimelock.TIMELOCK_ADMIN_ROLE(), address(this));
+    }
+
+    /// @notice configure the turbo authority. Requires ownership over turbo authority.
     function configureAuthority(MultiRolesAuthority turboAuthority) public {
         // GIBBER_ROLE
         turboAuthority.setRoleCapability(GIBBER_ROLE, TurboSafe.gib.selector, true);
@@ -68,6 +104,7 @@ contract Configurer {
         turboAuthority.setRoleCapability(TURBO_ADMIN_ROLE, TurboAdmin._setBorrowPaused.selector, true);
 
         turboAuthority.setRoleCapability(TURBO_ADMIN_ROLE, TurboAdmin.oracleAdd.selector, true);
+        turboAuthority.setRoleCapability(TURBO_ADMIN_ROLE, TurboAdmin.addCollateral.selector, true);
         turboAuthority.setRoleCapability(TURBO_ADMIN_ROLE, TurboAdmin._deployMarket.selector, true);
         turboAuthority.setRoleCapability(TURBO_ADMIN_ROLE, TurboAdmin._addRewardsDistributor.selector, true);
         turboAuthority.setRoleCapability(TURBO_ADMIN_ROLE, TurboAdmin._setWhitelistStatuses.selector, true);
@@ -125,31 +162,26 @@ contract Configurer {
         turboAuthority.setPublicCapability(TurboAdmin.execute.selector, true);
     }
 
+    /// @notice configure the turbo pool through turboAdmin. TurboAdmin requires pool ownership, and Configurer requires TURBO_ADMIN_ROLE.
     function configurePool(TurboAdmin turboAdmin, TurboBooster booster) public {
         turboAdmin._deployMarket(
             address(fei), 
-            0xC9dB5A1034BcBcca3f59dD61dbeE31b78CeFD126, // ZERO IRM
+            turboAdmin.ZERO_IRM(),
             "Turbo Fei", 
             "fFEI", 
-            0x67Db14E73C2Dce786B5bbBfa4D010dEab4BBFCF9, 
+            turboAdmin.CTOKEN_IMPL(), 
             new bytes(0), 
             0, 
             0, 
             0
         );
-        turboAdmin._deployMarket(
+        turboAdmin.addCollateral(
             address(tribe), 
-            0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7, 
             "Turbo Tribe", 
-            "fTRIBE", 
-            0x67Db14E73C2Dce786B5bbBfa4D010dEab4BBFCF9, 
-            new bytes(0), 
-            0, 
-            0, 
-            80e16
+            "fTRIBE",
+            80e16,
+            50_000_000e18
         );
-        turboAdmin._setBorrowPausedByUnderlying(tribe, true);
-
         booster.setBoostCapForCollateral(tribe, 2_000_000e18); // 1M boost cap TRIBE
 
         address[] memory users = new address[](1);
@@ -159,17 +191,19 @@ contract Configurer {
         enabled[0] = true;
 
         turboAdmin._setWhitelistStatuses(users, enabled);
-
     }
 
+    /// @notice requires TURBO_ADMIN_ROLE.
     function configureClerk(TurboClerk clerk) public {
-        clerk.setDefaultFeePercentage(90e16);
+        clerk.setDefaultFeePercentage(75e16); // 75% default revenue split
     }
 
+    /// @notice requires TURBO_ADMIN_ROLE.
     function configureSavior(TurboSavior savior) public {
         savior.setMinDebtPercentageForSaving(80e16); // 80%
     }
 
+    /// @notice requires ownership of Turbo Authority.
     function configureRoles(
         MultiRolesAuthority turboAuthority,
         TurboRouter router,
@@ -181,6 +215,7 @@ contract Configurer {
         turboAuthority.setUserRole(address(gibber), GIBBER_ROLE, true);
     }
 
+    /// @notice requires TURBO_ADMIN_ROLE and ownership over Turbo Authority.
     function configureMaster(
         TurboMaster master, 
         TurboClerk clerk, 
