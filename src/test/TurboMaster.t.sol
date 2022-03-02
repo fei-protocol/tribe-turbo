@@ -9,7 +9,7 @@ import {MockERC20} from "solmate/test/utils/mocks/MockERC20.sol";
 import {MockCToken} from "./mocks/MockCToken.sol";
 import {MockPriceFeed} from "./mocks/MockPriceFeed.sol";
 import {MockFuseAdmin} from "./mocks/MockFuseAdmin.sol";
-import {MockComptroller} from "./mocks/MockComptroller.sol";
+import {MockComptroller, Comptroller} from "./mocks/MockComptroller.sol";
 
 import {TurboClerk} from "../modules/TurboClerk.sol";
 import {TurboBooster} from "../modules/TurboBooster.sol";
@@ -39,7 +39,7 @@ contract TurboMasterTest is DSTestPlus {
 
         comptroller = new MockComptroller(address(fuseAdmin), new MockPriceFeed());
 
-        master = new TurboMaster(comptroller, fei, address(this), Authority(address(0)));
+        master = new TurboMaster(Comptroller(address(comptroller)), fei, address(this), Authority(address(0)));
 
         assertEq(master.getAllSafes().length, 1);
     }

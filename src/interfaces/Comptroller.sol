@@ -34,4 +34,95 @@ interface Comptroller {
     /// @param cTokens The list of cTokens to enter into, enabling them as collateral.
     /// @return A list of error codes, or 0 if there were no failures in entering the cTokens.
     function enterMarkets(CERC20[] calldata cTokens) external returns (uint256[] memory);
+
+    function _setPendingAdmin(address newPendingAdmin)
+        external
+        returns (uint256);
+
+    function _setBorrowCapGuardian(address newBorrowCapGuardian) external;
+
+    function _setMarketSupplyCaps(
+        CERC20[] calldata cTokens,
+        uint256[] calldata newSupplyCaps
+    ) external;
+
+    function _setMarketBorrowCaps(
+        CERC20[] calldata cTokens,
+        uint256[] calldata newBorrowCaps
+    ) external;
+
+    function _setPauseGuardian(address newPauseGuardian)
+        external
+        returns (uint256);
+
+    function _setMintPaused(CERC20 cToken, bool state)
+        external
+        returns (bool);
+
+    function _setBorrowPaused(CERC20 cToken, bool borrowPaused)
+        external
+        returns (bool);
+
+    function _setTransferPaused(bool state) external returns (bool);
+
+    function _setSeizePaused(bool state) external returns (bool);
+
+    function _setPriceOracle(address newOracle)
+        external
+        returns (uint256);
+
+    function _setCloseFactor(uint256 newCloseFactorMantissa)
+        external
+        returns (uint256);
+
+    function _setLiquidationIncentive(uint256 newLiquidationIncentiveMantissa)
+        external
+        returns (uint256);
+
+    function _setCollateralFactor(
+        CERC20 cToken,
+        uint256 newCollateralFactorMantissa
+    ) external returns (uint256);
+
+    function _acceptAdmin() external virtual returns (uint256);
+
+    function _deployMarket(
+        bool isCEther,
+        bytes calldata constructionData,
+        uint256 collateralFactorMantissa
+    ) external returns (uint256);
+
+    function borrowGuardianPaused(address cToken)
+        external
+        view
+        returns (bool);
+
+    function comptrollerImplementation()
+        external
+        view
+        returns (address);
+
+    function rewardsDistributors(uint256 index)
+        external
+        view
+        returns (address);
+
+    function _addRewardsDistributor(address distributor)
+        external
+        returns (uint256);
+
+    function _setWhitelistEnforcement(bool enforce)
+        external
+        returns (uint256);
+
+    function _setWhitelistStatuses(
+        address[] calldata suppliers,
+        bool[] calldata statuses
+    ) external returns (uint256);
+
+    function _unsupportMarket(CERC20 cToken) external returns (uint256);
+
+    function _toggleAutoImplementations(bool enabled)
+        external
+        returns (uint256);
 }

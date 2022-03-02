@@ -7,23 +7,23 @@ import {CERC20} from "../../interfaces/Comptroller.sol";
 import {PriceFeed} from "../../interfaces/PriceFeed.sol";
 import {Comptroller} from "../../interfaces/Comptroller.sol";
 
-contract MockComptroller is Comptroller {
+contract MockComptroller {
     /*///////////////////////////////////////////////////////////////
                             COMPTROLLER LOGIC
     //////////////////////////////////////////////////////////////*/
 
-    mapping(ERC20 => CERC20) public override cTokensByUnderlying;
+    mapping(ERC20 => CERC20) public cTokensByUnderlying;
 
     struct Market {
         bool isListed;
         uint256 collateralFactor;
     }
 
-    mapping(CERC20 => Market) public override markets;
+    mapping(CERC20 => Market) public markets;
 
-    address public immutable override admin;
+    address public immutable admin;
 
-    PriceFeed public immutable override oracle;
+    PriceFeed public immutable oracle;
 
     function enterMarkets(CERC20[] calldata cTokens) external returns (uint256[] memory errors) {
         errors = new uint256[](cTokens.length); // Will be filled with all 0s.
