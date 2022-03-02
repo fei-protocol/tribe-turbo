@@ -2,6 +2,7 @@
 pragma solidity 0.8.10;
 
 import "./Configurer.sol";
+import {TurboLens} from "../modules/TurboLens.sol";
 
 interface PoolDeployer {
     function deployPool(string memory name, address implementation, bool enforceWhitelist, uint256 closeFactor, uint256 liquidationIncentive, address priceOracle) external returns (uint256, Comptroller);
@@ -41,6 +42,8 @@ contract Deployer is Configurer {
     TurboGibber public gibber;
     TurboSavior public savior;
     TurboRouter public router;
+
+    TurboLens public lens;
 
     constructor() {
         deploy();
@@ -88,6 +91,8 @@ contract Deployer is Configurer {
         TurboBooster booster = new TurboBooster(address(turboTimelock), turboAuthority);
         configureMaster(master, clerk, booster, admin);
         
+        lens = new TurboLens(master);
+
         // Configure the base turbo pool with FEI and initial collaterals
         configurePool(admin, booster);
 
