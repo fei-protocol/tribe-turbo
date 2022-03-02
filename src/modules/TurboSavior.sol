@@ -107,7 +107,7 @@ contract TurboSavior is Auth, ReentrancyGuard {
 
         emit SafeSaved(msg.sender, safe, vault, feiAmount);
 
-        // Cache the Safe's collateral asset, saves a warm SLOAD below.
+        // Cache the Safe's collateral asset.
         CERC20 assetTurboCToken = safe.assetTurboCToken();
 
         // Get the Safe's asset's collateral factor in the Turbo Fuse Pool.
