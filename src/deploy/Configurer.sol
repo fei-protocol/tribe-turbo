@@ -59,6 +59,9 @@ contract Configurer {
     /// @notice HIGH CLEARANCE. Capable of critical governance functionality on TurboAdmin such as oracle upgrades. 
     uint8 public constant GOVERN_ROLE = 6;
 
+    /// @notice limited version of TURBO_ADMIN_ROLE which can manage collateral and vault parameters.
+    uint8 public constant TURBO_STRATEGIST_ROLE = 7;
+
     /******************** CONFIGURATION ********************/
 
     /// @notice configure the turbo timelock. Requires TIMELOCK_ADMIN_ROLE over timelock.
@@ -160,6 +163,14 @@ contract Configurer {
 
 
         turboAuthority.setPublicCapability(TurboAdmin.execute.selector, true);
+    
+        // TURBO_STRATEGIST_ROLE
+        turboAuthority.setRoleCapability(TURBO_STRATEGIST_ROLE, TurboAdmin.addCollateral.selector, true);
+        turboAuthority.setRoleCapability(TURBO_STRATEGIST_ROLE, TurboAdmin._setMarketSupplyCaps.selector, true);
+        turboAuthority.setRoleCapability(TURBO_STRATEGIST_ROLE, TurboAdmin._setMarketSupplyCapsByUnderlying.selector, true);
+        
+        turboAuthority.setRoleCapability(TURBO_STRATEGIST_ROLE, TurboBooster.setBoostCapForVault.selector, true);
+        turboAuthority.setRoleCapability(TURBO_STRATEGIST_ROLE, TurboBooster.setBoostCapForCollateral.selector, true);
     }
 
     /// @notice configure the turbo pool through turboAdmin. TurboAdmin requires pool ownership, and Configurer requires TURBO_ADMIN_ROLE.
