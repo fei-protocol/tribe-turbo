@@ -147,19 +147,24 @@ contract TurboRouterTest is DSTestPlus {
         fei.mint(address(vault), 0.1e18);
 
         router.slurp(safe, vault);
-        require(safe.totalFeiBoosted() == 1.1e18);
-        require(safe.getTotalFeiBoostedForVault(vault) == 1.1e18);
-        require(vault.balanceOf(address(safe)) == 1e18);
+        require(safe.totalFeiBoosted() == 1e18);
+        require(safe.getTotalFeiBoostedForVault(vault) == 1e18);
+        require(vault.balanceOf(address(safe)) < 1e18); // account for withdrawn
+        require(fei.balanceOf(address(safe)) == 0.1e18); 
 
         // less
-        router.less(safe, vault, 1.1e18);
+        router.less(safe, vault, 1e18);
         require(safe.totalFeiBoosted() == 0);
         require(safe.getTotalFeiBoostedForVault(vault) == 0);
         require(vault.balanceOf(address(safe)) == 0);
-        require(fei.balanceOf(address(safe)) == 0.1e18); 
 
         // sweep
-        router.sweep(safe, address(this), fei, 0.1e18);
+        router.sweep(safe, address(this), fei, 0.01e18);
+        require(fei.balanceOf(address(safe)) == 0.09e18); 
+        require(fei.balanceOf(address(this)) == 0.01e18); 
+
+        // sweepAll
+        router.sweepAll(safe, address(this), fei);
         require(fei.balanceOf(address(safe)) == 0); 
         require(fei.balanceOf(address(this)) == 0.1e18); 
     }

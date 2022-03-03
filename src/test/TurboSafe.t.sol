@@ -349,19 +349,18 @@ contract TurboSafeTest is DSTestPlus {
 
         uint256 safeInterestAmount = donationAmount - protocolFeeAmount;
 
-        uint256 delta = boostAmount + safeInterestAmount;
-
-        assertEq(safe.totalFeiBoosted(), delta);
-        assertEq(safe.getTotalFeiBoostedForVault(vault), delta);
-        assertEq(vault.assetsOf(address(safe)), delta);
-        assertEq(vault.totalAssets(), delta);
+        assertEq(safe.totalFeiBoosted(), boostAmount);
+        assertEq(safe.getTotalFeiBoostedForVault(vault), boostAmount);
+        assertEq(vault.assetsOf(address(safe)), boostAmount);
+        assertEq(vault.totalAssets(), boostAmount);
         assertEq(feiCToken.borrowBalanceCurrent(address(safe)), boostAmount);
 
-        assertEq(master.totalBoosted(), delta);
-        assertEq(master.getTotalBoostedForVault(vault), delta);
-        assertEq(master.getTotalBoostedAgainstCollateral(asset), delta);
+        assertEq(master.totalBoosted(), boostAmount);
+        assertEq(master.getTotalBoostedForVault(vault), boostAmount);
+        assertEq(master.getTotalBoostedAgainstCollateral(asset), boostAmount);
 
         assertEq(fei.balanceOf(address(master)), protocolFeeAmount);
+        assertEq(fei.balanceOf(address(safe)), safeInterestAmount);
     }
 
     /*///////////////////////////////////////////////////////////////
