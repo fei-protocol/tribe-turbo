@@ -12,10 +12,12 @@ import {CERC20} from "../interfaces/CERC20.sol";
 import {TurboSafe} from "../TurboSafe.sol";
 import {TurboMaster} from "../TurboMaster.sol";
 
+import {ENSReverseRecordAuth} from "../ens/ENSReverseRecordAuth.sol";
+
 /// @title Turbo Gibber
 /// @author Transmissions11
 /// @notice Atomic impounder module.
-contract TurboGibber is Auth, ReentrancyGuard {
+contract TurboGibber is Auth, ReentrancyGuard, ENSReverseRecordAuth {
     using SafeTransferLib for Fei;
 
     /*///////////////////////////////////////////////////////////////

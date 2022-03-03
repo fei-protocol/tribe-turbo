@@ -13,10 +13,12 @@ import {Comptroller} from "../interfaces/Comptroller.sol";
 import {TurboSafe} from "../TurboSafe.sol";
 import {TurboMaster} from "../TurboMaster.sol";
 
+import {ENSReverseRecordAuth} from "../ens/ENSReverseRecordAuth.sol";
+
 /// @title Turbo Savior
 /// @author Transmissions11
 /// @notice Safe repayment module.
-contract TurboSavior is Auth, ReentrancyGuard {
+contract TurboSavior is Auth, ReentrancyGuard, ENSReverseRecordAuth {
     using FixedPointMathLib for uint256;
 
     /*///////////////////////////////////////////////////////////////

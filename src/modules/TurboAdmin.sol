@@ -7,10 +7,12 @@ import {Auth, Authority} from "solmate/auth/Auth.sol";
 import {TurboBooster} from "./TurboBooster.sol";
 import {TurboClerk} from "./TurboClerk.sol";
 
+import {ENSReverseRecordAuth} from "../ens/ENSReverseRecordAuth.sol";
+
 /** 
  @title Turbo Admin of Turbo Fuse Pool and Turbo Timelock
 */
-contract TurboAdmin is Auth {
+contract TurboAdmin is Auth, ENSReverseRecordAuth {
     /// @notice generic error thrown when comptroller call fails
     error ComptrollerError();
 

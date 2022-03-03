@@ -15,11 +15,13 @@ import {TurboBooster} from "./modules/TurboBooster.sol";
 
 import {TurboSafe} from "./TurboSafe.sol";
 
+import {ENSReverseRecordAuth} from "./ens/ENSReverseRecordAuth.sol";
+
 /// @title Turbo Master
 /// @author Transmissions11
 /// @notice Factory for creating and managing Turbo Safes.
 /// @dev Must be authorized to call the Turbo Fuse Pool's FuseAdmin.
-contract TurboMaster is Auth {
+contract TurboMaster is Auth, ENSReverseRecordAuth {
     using SafeTransferLib for ERC20;
 
     /*///////////////////////////////////////////////////////////////

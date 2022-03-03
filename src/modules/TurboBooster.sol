@@ -7,10 +7,12 @@ import {Auth, Authority} from "solmate/auth/Auth.sol";
 
 import {TurboSafe} from "../TurboSafe.sol";
 
+import {ENSReverseRecordAuth} from "../ens/ENSReverseRecordAuth.sol";
+
 /// @title Turbo Booster
 /// @author Transmissions11
 /// @notice Boost authorization module.
-contract TurboBooster is Auth {
+contract TurboBooster is Auth, ENSReverseRecordAuth {
     /*///////////////////////////////////////////////////////////////
                               CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
