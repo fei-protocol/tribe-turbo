@@ -53,6 +53,9 @@ contract TurboLens {
         /// @notice the total amount of FEI boosted by the vault
         uint256 feiAmount;
 
+        /// @notice fee split to TRIBE dao scaled by 1e18
+        uint256 tribeDAOFee;
+
         StrategyInfo[] strategyInfo;
     }
 
@@ -62,16 +65,39 @@ contract TurboLens {
     }
 
     function getAllUserSafes(address owner) external returns (SafeInfo[] memory) {
+        TurboSafe[] memory safes = master.getAllSafes();
+        uint256 userSafeCount;
+        for (uint256 i = 0; i < safes.length; i++) {
+            if (safes[i].owner() == owner) userSafeCount += 1;
+        }
+        
+        TurboBooster booster = master.booster();
+        TurboClerk clerk = master.clerk();
 
+        ERC4626[] memory strategies = booster.getBoostableVaults();
+        PriceFeed oracle = pool.oracle();
+        
+        SafeInfo[] memory userSafes = new SafeInfo[](userSafeCount);
+        uint256 userSafesAdded;
+        for (uint256 j = 0; j < safes.length; j++) {
+            if (safes[j].owner() == owner) {
+                userSafes[userSafesAdded] = _getSafeInfo(safes[j], strategies, oracle, clerk);
+                userSafesAdded += 1; 
+            }
+        }
+
+        return userSafes;
     }
 
+    /// @dev this is non-view because some ERC-4626 vaults will be non-compliant and so the previewRedeem function is not static called.
+    /// @dev likewise the compound borrowBalanceCurrent is non-view
     function getSafeInfo(TurboSafe safe) external returns(SafeInfo memory) {
         TurboBooster booster = master.booster();
         ERC4626[] memory strategies = booster.getBoostableVaults();
-        return _getSafeInfo(safe, strategies, pool.oracle());
+        return _getSafeInfo(safe, strategies, pool.oracle(), master.clerk());
     }
 
-    function _getSafeInfo(TurboSafe safe, ERC4626[] memory strategies, PriceFeed oracle) internal returns (SafeInfo memory) {
+    function _getSafeInfo(TurboSafe safe, ERC4626[] memory strategies, PriceFeed oracle, TurboClerk clerk) internal returns (SafeInfo memory) {
         StrategyInfo[] memory info = new StrategyInfo[](strategies.length);
 
         uint256 totalFeiAmount;
@@ -94,14 +120,16 @@ contract TurboLens {
         uint256 collateralAmount = safe.previewRedeem(safe.totalSupply());
         uint256 collateralPrice = oracle.getUnderlyingPrice(safe.assetTurboCToken());
 
+        ERC20 collateral = safe.asset();
         return SafeInfo({
-            collateralAsset: safe.asset(), 
+            collateralAsset: collateral, 
             collateralAmount: collateralAmount,
             collateralValue: collateralAmount * collateralPrice / 1e18,
             debtAmount: debtAmount,
             debtValue: debtAmount * feiPrice / 1e18,
             boostedAmount: safe.totalFeiBoosted(),
             feiAmount: totalFeiAmount,
+            tribeDAOFee: clerk.getFeePercentageForSafe(safe, collateral),
             strategyInfo: info
         });
     }
