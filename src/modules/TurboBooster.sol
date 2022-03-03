@@ -45,11 +45,11 @@ contract TurboBooster is Auth {
                      VAULT BOOST CAP CONFIGURATION
     //////////////////////////////////////////////////////////////*/
 
-    ERC4626[] internal _boostableVaults;
+    ERC4626[] public boostableVaults;
 
     /// @notice exposes an array of boostable vaults. Only used for visibility.
     function getBoostableVaults() external view returns(ERC4626[] memory) {
-        return _boostableVaults;
+        return boostableVaults;
     }
 
     /// @notice Maps Vaults to the cap on the amount of Fei used to boost them.
@@ -68,7 +68,7 @@ contract TurboBooster is Auth {
 
         // Add to boostable vaults array
         if (getBoostCapForVault[vault] == 0) {
-            _boostableVaults.push(vault);
+            boostableVaults.push(vault);
         }
         
         // Update the boost cap for the Vault.
