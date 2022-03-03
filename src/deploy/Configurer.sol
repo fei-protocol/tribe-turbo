@@ -116,21 +116,6 @@ contract Configurer {
         turboAuthority.setRoleCapability(TURBO_ADMIN_ROLE, TurboAdmin._setLiquidationIncentive.selector, true);
 
         turboAuthority.setRoleCapability(TURBO_ADMIN_ROLE, TurboAdmin.schedule.selector, true);
-
-        // ROUTER_ROLE
-        turboAuthority.setRoleCapability(ROUTER_ROLE, TurboSafe.boost.selector, true);
-        turboAuthority.setRoleCapability(ROUTER_ROLE, TurboSafe.less.selector, true);
-        turboAuthority.setRoleCapability(ROUTER_ROLE, TurboSafe.slurp.selector, true);
-        turboAuthority.setRoleCapability(ROUTER_ROLE, TurboSafe.sweep.selector, true);
-        turboAuthority.setRoleCapability(ROUTER_ROLE, ERC4626.deposit.selector, true);
-        turboAuthority.setRoleCapability(ROUTER_ROLE, ERC4626.mint.selector, true);
-        turboAuthority.setRoleCapability(ROUTER_ROLE, ERC4626.withdraw.selector, true);
-        turboAuthority.setRoleCapability(ROUTER_ROLE, ERC4626.redeem.selector, true);
-
-
-        // SAVIOR_ROLE
-        turboAuthority.setRoleCapability(SAVIOR_ROLE, TurboSafe.less.selector, true);
-        turboAuthority.setPublicCapability(TurboSavior.save.selector, true);
         
         // GUARDIAN_ROLE
         turboAuthority.setRoleCapability(GUARDIAN_ROLE, TurboSafe.less.selector, true);
@@ -171,6 +156,25 @@ contract Configurer {
         
         turboAuthority.setRoleCapability(TURBO_STRATEGIST_ROLE, TurboBooster.setBoostCapForVault.selector, true);
         turboAuthority.setRoleCapability(TURBO_STRATEGIST_ROLE, TurboBooster.setBoostCapForCollateral.selector, true);
+    
+        turboAuthority.setPublicCapability(TurboSavior.save.selector, true);
+    }
+
+        /// @notice configure the default authority. Requires ownership over default authority.
+    function configureDefaultAuthority(MultiRolesAuthority defaultAuthority) public {
+        // ROUTER_ROLE
+        defaultAuthority.setRoleCapability(ROUTER_ROLE, TurboSafe.boost.selector, true);
+        defaultAuthority.setRoleCapability(ROUTER_ROLE, TurboSafe.less.selector, true);
+        defaultAuthority.setRoleCapability(ROUTER_ROLE, TurboSafe.slurp.selector, true);
+        defaultAuthority.setRoleCapability(ROUTER_ROLE, TurboSafe.sweep.selector, true);
+        defaultAuthority.setRoleCapability(ROUTER_ROLE, ERC4626.deposit.selector, true);
+        defaultAuthority.setRoleCapability(ROUTER_ROLE, ERC4626.mint.selector, true);
+        defaultAuthority.setRoleCapability(ROUTER_ROLE, ERC4626.withdraw.selector, true);
+        defaultAuthority.setRoleCapability(ROUTER_ROLE, ERC4626.redeem.selector, true);
+
+
+        // SAVIOR_ROLE
+        defaultAuthority.setRoleCapability(SAVIOR_ROLE, TurboSafe.less.selector, true);
     }
 
     /// @notice configure the turbo pool through turboAdmin. TurboAdmin requires pool ownership, and Configurer requires TURBO_ADMIN_ROLE.
@@ -214,15 +218,16 @@ contract Configurer {
         savior.setMinDebtPercentageForSaving(80e16); // 80%
     }
 
-    /// @notice requires ownership of Turbo Authority.
+    /// @notice requires ownership of Turbo Authority and default authority.
     function configureRoles(
         MultiRolesAuthority turboAuthority,
+        MultiRolesAuthority defaultAuthority,
         TurboRouter router,
         TurboSavior savior,
         TurboGibber gibber
     ) public {
-        turboAuthority.setUserRole(address(router), ROUTER_ROLE, true);
-        turboAuthority.setUserRole(address(savior), SAVIOR_ROLE, true);
+        defaultAuthority.setUserRole(address(router), ROUTER_ROLE, true);
+        defaultAuthority.setUserRole(address(savior), SAVIOR_ROLE, true);
         turboAuthority.setUserRole(address(gibber), GIBBER_ROLE, true);
     }
 
@@ -231,7 +236,8 @@ contract Configurer {
         TurboMaster master, 
         TurboClerk clerk, 
         TurboBooster booster,
-        TurboAdmin admin
+        TurboAdmin admin,
+        MultiRolesAuthority defaultAuthority
     ) public {
         MultiRolesAuthority turboAuthority = MultiRolesAuthority(address(master.authority()));
 
@@ -245,6 +251,6 @@ contract Configurer {
 
         master.setClerk(clerk);
         master.setBooster(booster);
-        master.setDefaultSafeAuthority(turboAuthority);
+        master.setDefaultSafeAuthority(defaultAuthority);
     }
 }
