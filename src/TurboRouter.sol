@@ -133,6 +133,10 @@ contract TurboRouter is ERC4626RouterBase, ENSReverseRecord {
         safe.sweep(to, token, amount);
     }
 
+    function sweepAll(TurboSafe safe, address to, ERC20 token) external authenticate(address(safe)) {
+        safe.sweep(to, token, token.balanceOf(address(safe)));
+    }
+
     function slurpAndLess(TurboSafe safe, ERC4626 vault, uint256 feiAmount) external authenticate(address(safe)) {
         safe.slurp(vault);
         safe.less(vault, feiAmount);

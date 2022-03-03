@@ -263,31 +263,6 @@ contract TurboMaster is Auth {
         getTotalBoostedAgainstCollateral[asset] -= feiAmount;
     }
 
-    /// @notice Callback triggered whenever a Safe harvests from a Vault.
-    /// @param asset The asset of the Safe.
-    /// @param vault The Vault that was harvested from.
-    /// @param feiAmount The amount of Fei accrued as interest to the Safe.
-    function onSafeSlurp(
-        ERC20 asset,
-        ERC4626 vault,
-        uint256 feiAmount
-    ) external {
-        // Get the caller as a Safe instance.
-        TurboSafe safe = TurboSafe(msg.sender);
-
-        // Ensure the Safe was created by this Master.
-        require(getSafeId[safe] != 0, "INVALID_SAFE");
-
-        // Update the total amount of Fei being using to boost Vaults.
-        totalBoosted += feiAmount;
-
-        // Update the total amount of Fei being using to boost the Vault.
-        getTotalBoostedForVault[vault] += feiAmount;
-
-        // Update the total amount of Fei boosted against the collateral type.
-        getTotalBoostedAgainstCollateral[asset] += feiAmount;
-    }
-
     /*///////////////////////////////////////////////////////////////
                               SWEEP LOGIC
     //////////////////////////////////////////////////////////////*/
