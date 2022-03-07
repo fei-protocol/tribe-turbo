@@ -1,2 +1,2 @@
-testFailCreateWithNoCTokenMapped() (gas: 148790)
-testCreateSafe() (gas: 4317375)
+testFailCreateWithNoCTokenMapped() (gas: 148757)
+testCreateSafe() (gas: 4295919)
