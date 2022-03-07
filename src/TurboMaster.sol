@@ -10,7 +10,6 @@ import {FuseAdmin} from "./interfaces/FuseAdmin.sol";
 import {Comptroller} from "./interfaces/Comptroller.sol";
 
 import {TurboClerk} from "./modules/TurboClerk.sol";
-import {TurboGibber} from "./modules/TurboGibber.sol";
 import {TurboBooster} from "./modules/TurboBooster.sol";
 
 import {TurboSafe} from "./TurboSafe.sol";

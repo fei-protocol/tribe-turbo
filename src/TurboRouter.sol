@@ -35,19 +35,22 @@ contract TurboRouter is ERC4626RouterBase, ENSReverseRecord {
     }
 
     modifier authenticate(address target) {
-        require(msg.sender == Auth(target).owner(), "NOT_AUTHED");
+        require(msg.sender == Auth(target).owner() || Auth(target).authority().canCall(msg.sender, target, msg.sig), "NOT_AUTHED");
 
         _;
     }
 
-    function createSafe(ERC20 underlying) external {
-        (TurboSafe safe, ) = master.createSafe(underlying);
+    function createSafe(ERC20 underlying) external returns (TurboSafe safe) {
+        (safe, ) = master.createSafe(underlying);
 
         safe.setOwner(msg.sender);
     }
 
-    function createSafeAndDeposit(ERC20 underlying, address to, uint256 amount, uint256 minSharesOut) external {
-        (TurboSafe safe, ) = master.createSafe(underlying);
+    function createSafeAndDeposit(ERC20 underlying, address to, uint256 amount, uint256 minSharesOut) external returns (TurboSafe safe) {
+        (safe, ) = master.createSafe(underlying);
+
+        // approve max from router to save depositor gas in future.
+        approve(underlying, address(safe), type(uint256).max);
 
         super.deposit(IERC4626(address(safe)), to, amount, minSharesOut);
 
@@ -61,8 +64,11 @@ contract TurboRouter is ERC4626RouterBase, ENSReverseRecord {
         uint256 minSharesOut, 
         ERC4626 boostedVault, 
         uint256 boostedFeiAmount
-    ) public {
-        (TurboSafe safe, ) = master.createSafe(underlying);
+    ) public returns (TurboSafe safe) {
+        (safe, ) = master.createSafe(underlying);
+
+        // approve max from router to save depositor gas in future.
+        approve(underlying, address(safe), type(uint256).max);
 
         super.deposit(IERC4626(address(safe)), to, amount, minSharesOut);
 
