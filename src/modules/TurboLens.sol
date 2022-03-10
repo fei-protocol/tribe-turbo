@@ -10,10 +10,6 @@ import {TurboBooster} from "./TurboBooster.sol";
 
 import {TurboMaster, TurboSafe} from "../TurboMaster.sol";
 
-interface UncompliantERC4626 {
-    function previewRedeem(uint shares) external returns(uint);
-}
-
 /// @title Turbo Lens
 contract TurboLens {
     Comptroller public immutable pool;
@@ -105,7 +101,7 @@ contract TurboLens {
         for (uint256 i = 0; i < strategies.length; i++) {
             ERC4626 strategy = strategies[i];
             uint256 boosted = safe.getTotalFeiBoostedForVault(strategy);
-            uint256 feiAmount = UncompliantERC4626(address(strategy)).previewRedeem(strategy.balanceOf(address(safe)));
+            uint256 feiAmount = strategy.previewRedeem(strategy.balanceOf(address(safe)));
 
             if (boosted != 0 || feiAmount != 0) {
                 totalFeiAmount += feiAmount;
