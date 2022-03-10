@@ -12,7 +12,7 @@ import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
 import {MockCToken} from "./mocks/MockCToken.sol";
 import {MockPriceFeed} from "./mocks/MockPriceFeed.sol";
 import {MockFuseAdmin} from "./mocks/MockFuseAdmin.sol";
-import {MockComptroller} from "./mocks/MockComptroller.sol";
+import {MockComptroller, Comptroller} from "./mocks/MockComptroller.sol";
 
 import {TurboClerk} from "../modules/TurboClerk.sol";
 import {TurboGibber} from "../modules/TurboGibber.sol";
@@ -57,7 +57,7 @@ contract TurboGibberTest is DSTestPlus {
 
         comptroller = new MockComptroller(address(fuseAdmin), new MockPriceFeed());
 
-        master = new TurboMaster(comptroller, fei, address(this), new MockAuthority(true));
+        master = new TurboMaster(Comptroller(address(comptroller)), fei, address(this), new MockAuthority(true));
 
         assetCToken = new MockCToken(asset);
 

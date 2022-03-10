@@ -1,37 +1,42 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.10;
 
-import {ERC20} from "solmate/tokens/ERC20.sol";
-import {Auth, Authority} from "solmate/auth/Auth.sol";
-import {MultiRolesAuthority} from "solmate/auth/authorities/MultiRolesAuthority.sol";
+import "./Configurer.sol";
 
-import {Comptroller} from "../interfaces/Comptroller.sol";
+interface PoolDeployer {
+    function deployPool(string memory name, address implementation, bool enforceWhitelist, uint256 closeFactor, uint256 liquidationIncentive, address priceOracle) external returns (uint256, Comptroller);
+}
 
-import {TurboClerk} from "../modules/TurboClerk.sol";
-import {TurboGibber} from "../modules/TurboGibber.sol";
-import {TurboBooster} from "../modules/TurboBooster.sol";
-import {TurboSavior} from "../modules/TurboSavior.sol";
+/**
+ @title Turbo Deployer
+ NOT INTENDED FOR MAINNET DEPLOYMENT
 
-import {TurboRouter, IWETH9} from "../TurboRouter.sol";
-import {TurboMaster, TurboSafe, ERC4626} from "../TurboMaster.sol";
+ This contract would far exceed the bytecode limit. 
 
-import {TimelockController} from "@openzeppelin/governance/TimelockController.sol";
+ The "Deployer" is a thin extension layer on the Configurer in terms of logic, but it holds all the actual deployment code.
 
-/// @title Turbo Deployer
-contract Deployer {
-    Comptroller pool = Comptroller(0xc62ceB397a65edD6A68715b2d3922dEE0D63F45c);
-    ERC20 fei = ERC20(0x956F47F50A910163D8BF957Cf5846D573E7f87CA);
+ The actual deployment will just use the Configurer, assume the deployer steps are manually taken in order per the deploy function
+ */
+contract Deployer is Configurer {
+    
+    /// @notice the comptroller of the turbo fuse pool
+    Comptroller pool;
+    
     IWETH9 weth = IWETH9(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
 
-    address constant feiDAOTimelock = 0xd51dbA7a94e1adEa403553A8235C302cEbF41a3c;
+    PoolDeployer poolDeployer = PoolDeployer(0x835482FE0532f169024d5E9410199369aAD5C77E);
+    
+    /// @notice the master oracle used for the turbo fuse pool
+    address masterOracle = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D;
+   
+    /// @notice the comptroller implementation for the turbo fuse pool
+    /// TODO change impl to b Protocol impl also edit TurboAdmin
+    address poolImpl = 0xE16DB319d9dA7Ce40b666DD2E365a4b8B3C18217;
 
-    uint256 public timelockDelay = 30 days;
+    /// @notice the turbo timelock controller delay
+    uint256 public timelockDelay = 15 days;
 
-    uint8 public constant GIBBER_ROLE = 1;
-    uint8 public constant ROUTER_ROLE = 2;
-    uint8 public constant SAVIOR_ROLE = 3;
-    uint8 public constant TURBO_POD_ROLE = 4;
-
+    // Turbo contracts
     TurboMaster public master;
     TurboGibber public gibber;
     TurboSavior public savior;
@@ -42,77 +47,65 @@ contract Deployer {
     }
 
     function deploy() public {
+        // First deploy a new Fuse pool
+        (,pool) = poolDeployer.deployPool(
+            "Tribe Turbo Pool", // name 
+            poolImpl, // comptroller impl address
+            true, // set whitelist enforcement true
+            50e16, // 50% Close Factor
+            108e16, // 8% Liquidation Incentive (not sure why it needs to be 108 but it does)
+            masterOracle // master oracle for pool
+        );
+
+        // temporarily assume ownership of pool (required by deployer)
+        pool._acceptAdmin();
+
+        // Deploy a timelock and authority to use throughout system 
         TimelockController turboTimelock = new TimelockController(timelockDelay, new address[](0), new address[](0));
         MultiRolesAuthority turboAuthority = new MultiRolesAuthority(address(this), Authority(address(0)));
-        turboAuthority.setRoleCapability(GIBBER_ROLE, TurboSafe.gib.selector, true);
-        turboAuthority.setRoleCapability(TURBO_POD_ROLE, TurboSafe.slurp.selector, true);
-        turboAuthority.setRoleCapability(TURBO_POD_ROLE, TurboSafe.less.selector, true);
+        
+        // Default authority setup
+        MultiRolesAuthority defaultAuthority = new MultiRolesAuthority(address(this), Authority(address(0)));
+        configureDefaultAuthority(defaultAuthority);
 
+        // Temporarily grant the deployer the turbo admin role for setup
+        turboAuthority.setUserRole(address(this), TURBO_ADMIN_ROLE, true);
+
+        // Deploy the Turbo Admin and assume pool ownership
+        TurboAdmin admin = new TurboAdmin(pool, turboTimelock, turboAuthority);
+        pool._setPendingAdmin(address(admin));
+        admin._acceptAdmin();
+
+        // Create ACL roles and configure timelock
+        configureTimelock(turboTimelock, admin);
+        configureAuthority(turboAuthority);
+
+        // Deploy master, clerk, booster and configure
         master = new TurboMaster(
             pool,
             fei,
-            address(this),
+            address(turboTimelock),
             turboAuthority
         );
 
-        TurboClerk clerk = new TurboClerk(address(this), Authority(address(0)));
-
-        clerk.setDefaultFeePercentage(90e16);
-        clerk.setOwner(feiDAOTimelock);
-
-        master.setClerk(clerk);
-
-        TurboBooster booster = new TurboBooster(
-           feiDAOTimelock, Authority(address(0)) 
-        );
-
-        master.setBooster(booster);
+        TurboClerk clerk = new TurboClerk(address(turboTimelock), turboAuthority);
+        TurboBooster booster = new TurboBooster(address(turboTimelock), turboAuthority);
+        configureMaster(master, clerk, booster, admin, defaultAuthority);
         
-        gibber = new TurboGibber(master, address(turboTimelock), Authority(address(0)));
+        // Configure the base turbo pool with FEI and initial collaterals
+        configurePool(admin, booster);
 
-        turboAuthority.setUserRole(address(gibber), GIBBER_ROLE, true);
+        gibber = new TurboGibber(master, address(turboTimelock), Authority(address(0))); // gibber only operates behind timelock, no authority
+        savior = new TurboSavior(master, address(turboTimelock), turboAuthority);
+        router = new TurboRouter(master, "", weth); // TODO add ENS everywhere
 
-        savior = new TurboSavior(
-            master, address(this), Authority(address(0))
-        );
+        // configure remaining ACL roles and params
+        configureRoles(turboAuthority, defaultAuthority, router, savior, gibber);
+        configureClerk(clerk);
+        configureSavior(savior);
 
-        savior.setMinDebtPercentageForSaving(80e16); // 80%
-
-        router = new TurboRouter(master, "", weth);
-
-        master.setDefaultSafeAuthority(
-            configureDefaultAuthority(
-                address(turboTimelock),
-                address(router),
-                address(savior)
-            )
-        );
-
-        savior.setAuthority(master.defaultSafeAuthority());
-        savior.setOwner(feiDAOTimelock);
-
-        master.setOwner(address(turboTimelock));
-    }
-
-    function configureDefaultAuthority(address owner, address _router, address _savior) internal returns (MultiRolesAuthority) {
-        MultiRolesAuthority defaultAuthority = new MultiRolesAuthority(address(this), Authority(address(0)));
-        defaultAuthority.setRoleCapability(ROUTER_ROLE, TurboSafe.boost.selector, true);
-        defaultAuthority.setRoleCapability(ROUTER_ROLE, TurboSafe.less.selector, true);
-        defaultAuthority.setRoleCapability(ROUTER_ROLE, TurboSafe.slurp.selector, true);
-        defaultAuthority.setRoleCapability(ROUTER_ROLE, TurboSafe.sweep.selector, true);
-        defaultAuthority.setRoleCapability(ROUTER_ROLE, ERC4626.deposit.selector, true);
-        defaultAuthority.setRoleCapability(ROUTER_ROLE, ERC4626.mint.selector, true);
-        defaultAuthority.setRoleCapability(ROUTER_ROLE, ERC4626.withdraw.selector, true);
-        defaultAuthority.setRoleCapability(ROUTER_ROLE, ERC4626.redeem.selector, true);
-
-        defaultAuthority.setUserRole(_router, ROUTER_ROLE, true);
-
-        defaultAuthority.setRoleCapability(SAVIOR_ROLE, TurboSafe.less.selector, true);
-
-        defaultAuthority.setUserRole(_savior, SAVIOR_ROLE, true);
-
-        defaultAuthority.setPublicCapability(TurboSavior.save.selector, true);
-        defaultAuthority.setOwner(owner);
-        return defaultAuthority;
+        // reset admin access on deployer
+        turboAuthority.setUserRole(address(this), TURBO_ADMIN_ROLE, false);
+        turboAuthority.setOwner(address(turboTimelock));
     }
 }
