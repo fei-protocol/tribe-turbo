@@ -2,6 +2,7 @@
 pragma solidity 0.8.10;
 
 import "./Configurer.sol";
+import {MockERC4626} from "solmate/test/utils/mocks/MockERC4626.sol";
 import {TurboLens} from "../modules/TurboLens.sol";
 
 interface PoolDeployer {
@@ -44,6 +45,8 @@ contract Deployer is Configurer {
     TurboRouter public router;
 
     TurboLens public lens;
+
+    MockERC4626 public strategy;
 
     constructor() {
         deploy();
@@ -108,6 +111,10 @@ contract Deployer is Configurer {
         configureRoles(turboAuthority, defaultAuthority, router, savior, gibber);
         configureClerk(clerk);
         configureSavior(savior);
+
+        // TODO migrate mock to an actual strategy
+        strategy = new MockERC4626(fei, "xFEI", "xFEI");
+        booster.setBoostCapForVault(strategy, 2_000_000e18); // 1M boost cap for vault
 
         // reset admin access on deployer
         turboAuthority.setUserRole(address(this), TURBO_ADMIN_ROLE, false);
