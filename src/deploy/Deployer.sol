@@ -67,6 +67,10 @@ contract Deployer is Configurer {
         TimelockController turboTimelock = new TimelockController(timelockDelay, new address[](0), new address[](0));
         MultiRolesAuthority turboAuthority = new MultiRolesAuthority(address(this), Authority(address(0)));
         
+        // Default authority setup
+        MultiRolesAuthority defaultAuthority = new MultiRolesAuthority(address(this), Authority(address(0)));
+        configureDefaultAuthority(defaultAuthority);
+
         // Temporarily grant the deployer the turbo admin role for setup
         turboAuthority.setUserRole(address(this), TURBO_ADMIN_ROLE, true);
 
@@ -89,7 +93,7 @@ contract Deployer is Configurer {
 
         TurboClerk clerk = new TurboClerk(address(turboTimelock), turboAuthority);
         TurboBooster booster = new TurboBooster(address(turboTimelock), turboAuthority);
-        configureMaster(master, clerk, booster, admin);
+        configureMaster(master, clerk, booster, admin, defaultAuthority);
         
         lens = new TurboLens(master);
 
@@ -101,7 +105,7 @@ contract Deployer is Configurer {
         router = new TurboRouter(master, "", weth); // TODO add ENS everywhere
 
         // configure remaining ACL roles and params
-        configureRoles(turboAuthority, router, savior, gibber);
+        configureRoles(turboAuthority, defaultAuthority, router, savior, gibber);
         configureClerk(clerk);
         configureSavior(savior);
 
