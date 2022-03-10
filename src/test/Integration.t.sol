@@ -2,7 +2,6 @@
 pragma solidity 0.8.10;
 
 import "../deploy/Deployer.sol";
-import {FuseAdmin} from "../interfaces/FuseAdmin.sol";
 import {DSTestPlus} from "solmate/test/utils/DSTestPlus.sol";
 import {MockERC20} from "solmate/test/utils/mocks/MockERC20.sol";
 import {MockERC4626} from "solmate/test/utils/mocks/MockERC4626.sol";
@@ -22,13 +21,14 @@ contract Integration is DSTestPlus {
     TurboBooster booster;
     MultiRolesAuthority authority;
     Comptroller comptroller;
-    FuseAdmin fuseAdmin;
+    TurboAdmin fuseAdmin;
+    TurboLens lens;
 
     MockERC4626 strategy;
 
     ERC20 tribe = ERC20(0xc7283b66Eb1EB5FB86327f08e1B5816b0720212B);
     MockERC20 fei = MockERC20(0x956F47F50A910163D8BF957Cf5846D573E7f87CA);
-    CERC20 fFEI = CERC20(0xa837E15471D07a9cf0733B99ba3bD30C369a73F9);
+    CERC20 fFEI;
 
     address constant feiDAOTimelock = 0xd51dbA7a94e1adEa403553A8235C302cEbF41a3c;
     ICore constant core = ICore(0x8d5ED43dCa8C2F7dFB20CF7b53CC7E593635d7b9);
@@ -39,12 +39,13 @@ contract Integration is DSTestPlus {
         master = deployer.master();
         gibber = deployer.gibber();
         savior = deployer.savior();
+        lens = deployer.lens();
 
         booster = master.booster();
         authority = MultiRolesAuthority(address(master.authority()));
 
         comptroller = master.pool();
-        fuseAdmin = FuseAdmin(address(comptroller.admin()));
+        fuseAdmin = TurboAdmin(address(comptroller.admin()));
     
         strategy = new MockERC4626(fei, "xFEI", "xFEI");
 
@@ -53,34 +54,13 @@ contract Integration is DSTestPlus {
 
     function configurePool() public {
         hevm.startPrank(feiDAOTimelock);
-        fuseAdmin._deployMarket(
-            address(tribe), 
-            0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7, 
-            "Turbo Tribe", 
-            "fTRIBE", 
-            0x67Db14E73C2Dce786B5bbBfa4D010dEab4BBFCF9, 
-            new bytes(0), 
-            0, 
-            0, 
-            80e16
-        );
-        core.grantRole(keccak256("TRIBAL_CHIEF_ADMIN_ROLE"), address(master));
+        fFEI = comptroller.cTokensByUnderlying(fei);
         
         fei.mint(feiDAOTimelock, 10_000_000e18);
-
         fei.approve(address(fFEI), 10_000_000e18);
         
-        address[] memory users = new address[](1);
-        users[0] = feiDAOTimelock;
-
-        bool[] memory enabled = new bool[](1);
-        enabled[0] = true;
-
-        fuseAdmin._setWhitelistStatuses(users, enabled);
-
         require(fFEI.mint(10_000_000e18) == 0, "mint fails");
 
-        booster.setBoostCapForCollateral(tribe, 2_000_000e18); // 1M boost cap TRIBE
         booster.setBoostCapForVault(strategy, 2_000_000e18); // 1M boost cap for vault
 
         core.allocateTribe(address(this), 10_000_000e18);
@@ -109,11 +89,18 @@ contract Integration is DSTestPlus {
         hevm.prank(feiDAOTimelock);
         fei.mint(address(strategy), 10_000e18);
 
+        TurboLens.SafeInfo memory safeInfo = lens.getSafeInfo(safe);
+        require(safeInfo.collateralAsset == safe.asset(), "asset");
+        require(safeInfo.collateralAmount == 2_000_000e18, "safe amount");
+        require(safeInfo.debtAmount == 100_000e18, "debt amount");
+        require(safeInfo.boostedAmount == 100_000e18, "boosted amount");
+        require(safeInfo.feiAmount == 110_000e18, "fei amount");
+
         require(fei.balanceOf(address(master)) == 0, "no fei");
         safe.slurp(strategy);
-        require(fei.balanceOf(address(master)) == 9000e18, "master slurps");
+        require(fei.balanceOf(address(master)) == 7500e18, "master slurps");
 
-        safe.less(strategy, 101_000e18);
+        safe.less(strategy, 102_500e18);
 
         require(strategy.balanceOf(address(safe)) == 0, "Safe empty");
 

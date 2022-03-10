@@ -6,10 +6,12 @@ import {Auth, Authority} from "solmate/auth/Auth.sol";
 
 import {TurboSafe} from "../TurboSafe.sol";
 
+import {ENSReverseRecordAuth} from "../ens/ENSReverseRecordAuth.sol";
+
 /// @title Turbo Clerk
 /// @author Transmissions11
 /// @notice Fee determination module for Turbo Safes.
-contract TurboClerk is Auth {
+contract TurboClerk is Auth, ENSReverseRecordAuth {
     /*///////////////////////////////////////////////////////////////
                               CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/

@@ -11,7 +11,7 @@ import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
 import {MockCToken} from "./mocks/MockCToken.sol";
 import {MockPriceFeed} from "./mocks/MockPriceFeed.sol";
 import {MockFuseAdmin} from "./mocks/MockFuseAdmin.sol";
-import {MockComptroller} from "./mocks/MockComptroller.sol";
+import {MockComptroller, Comptroller} from "./mocks/MockComptroller.sol";
 
 import {TurboClerk} from "../modules/TurboClerk.sol";
 import {TurboBooster} from "../modules/TurboBooster.sol";
@@ -57,7 +57,7 @@ contract TurboSafeTest is DSTestPlus {
 
         comptroller = new MockComptroller(address(fuseAdmin), new MockPriceFeed());
 
-        master = new TurboMaster(comptroller, fei, address(this), Authority(address(0)));
+        master = new TurboMaster(Comptroller(address(comptroller)), fei, address(this), Authority(address(0)));
 
         assetCToken = new MockCToken(asset);
 
@@ -89,7 +89,7 @@ contract TurboSafeTest is DSTestPlus {
         safe.deposit(amount, to);
 
         assertEq(safe.balanceOf(to), amount);
-        assertEq(safe.assetsOf(to), amount);
+        assertEq(safe.previewRedeem(safe.balanceOf(address(to))), amount);
         assertEq(assetCToken.balanceOfUnderlying(address(safe)), amount);
         assertEq(safe.totalAssets(), amount);
     }
@@ -261,7 +261,7 @@ contract TurboSafeTest is DSTestPlus {
 
         assertEq(safe.totalFeiBoosted(), feiAmount);
         assertEq(safe.getTotalFeiBoostedForVault(vault), feiAmount);
-        assertEq(vault.assetsOf(address(safe)), feiAmount);
+        assertEq(vault.previewRedeem(vault.balanceOf(address(safe))), feiAmount);
         assertEq(vault.totalAssets(), feiAmount);
         assertEq(feiCToken.borrowBalanceCurrent(address(safe)), feiAmount);
 
@@ -299,7 +299,7 @@ contract TurboSafeTest is DSTestPlus {
 
         assertEq(safe.totalFeiBoosted(), delta);
         assertEq(safe.getTotalFeiBoostedForVault(vault), delta);
-        assertEq(vault.assetsOf(address(safe)), delta);
+        assertEq(vault.previewRedeem(vault.balanceOf(address(safe))), delta);
         assertEq(vault.totalAssets(), delta);
         assertEq(feiCToken.borrowBalanceCurrent(address(safe)), delta);
 
@@ -351,8 +351,9 @@ contract TurboSafeTest is DSTestPlus {
 
         assertEq(safe.totalFeiBoosted(), boostAmount);
         assertEq(safe.getTotalFeiBoostedForVault(vault), boostAmount);
-        assertEq(vault.assetsOf(address(safe)), boostAmount);
+        assertEq(vault.previewRedeem(vault.balanceOf(address(safe))), boostAmount);
         assertEq(vault.totalAssets(), boostAmount);
+        
         assertEq(feiCToken.borrowBalanceCurrent(address(safe)), boostAmount);
 
         assertEq(master.totalBoosted(), boostAmount);

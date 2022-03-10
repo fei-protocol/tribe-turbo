@@ -8,15 +8,18 @@ import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
 
 import {Fei} from "../interfaces/Fei.sol";
 import {CERC20} from "../interfaces/CERC20.sol";
+import {PriceFeed} from "../interfaces/PriceFeed.sol";
 import {Comptroller} from "../interfaces/Comptroller.sol";
 
 import {TurboSafe} from "../TurboSafe.sol";
 import {TurboMaster} from "../TurboMaster.sol";
 
+import {ENSReverseRecordAuth} from "../ens/ENSReverseRecordAuth.sol";
+
 /// @title Turbo Savior
 /// @author Transmissions11
 /// @notice Safe repayment module.
-contract TurboSavior is Auth, ReentrancyGuard {
+contract TurboSavior is Auth, ReentrancyGuard, ENSReverseRecordAuth {
     using FixedPointMathLib for uint256;
 
     /*///////////////////////////////////////////////////////////////
@@ -110,6 +113,9 @@ contract TurboSavior is Auth, ReentrancyGuard {
         // Cache the Safe's collateral asset.
         CERC20 assetTurboCToken = safe.assetTurboCToken();
 
+        // Cache the pool's current oracle.
+        PriceFeed oracle = pool.oracle();
+
         // Get the Safe's asset's collateral factor in the Turbo Fuse Pool.
         (, uint256 collateralFactor) = pool.markets(assetTurboCToken);
 
@@ -118,11 +124,11 @@ contract TurboSavior is Auth, ReentrancyGuard {
             .balanceOf(address(safe))
             .mulWadDown(assetTurboCToken.exchangeRateStored())
             .mulWadDown(collateralFactor)
-            .mulWadDown(pool.oracle().getUnderlyingPrice(assetTurboCToken));
+            .mulWadDown(oracle.getUnderlyingPrice(assetTurboCToken));
 
         // Compute the value of the Safe's debt. Rounding up to favor saving them.
         uint256 debtValue = feiTurboCToken.borrowBalanceCurrent(address(safe)).mulWadUp(
-            pool.oracle().getUnderlyingPrice(feiTurboCToken)
+            oracle.getUnderlyingPrice(feiTurboCToken)
         );
 
         // Ensure the Safe's debt percentage is high enough to justify saving, otherwise revert.

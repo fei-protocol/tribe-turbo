@@ -18,7 +18,7 @@ import {TurboClerk} from "../modules/TurboClerk.sol";
 import {TurboBooster} from "../modules/TurboBooster.sol";
 
 import {TurboSafe} from "../TurboSafe.sol";
-import {TurboMaster} from "../TurboMaster.sol";
+import {TurboMaster, Comptroller} from "../TurboMaster.sol";
 import {TurboRouter, IWETH9} from "../TurboRouter.sol";
 
 contract TurboRouterTest is DSTestPlus {
@@ -59,7 +59,7 @@ contract TurboRouterTest is DSTestPlus {
 
         comptroller = new MockComptroller(address(fuseAdmin), new MockPriceFeed());
 
-        master = new TurboMaster(comptroller, fei, address(this), new MockAuthority(true));
+        master = new TurboMaster(Comptroller(address(comptroller)), fei, address(this), new MockAuthority(true));
 
         assetCToken = new MockCToken(asset);
 
