@@ -44,6 +44,8 @@ contract TurboRouterTest is DSTestPlus {
 
     MockERC4626 vault;
 
+    MockERC4626 vault2;
+
     TurboRouter router;
 
     function setUp() public {
@@ -71,11 +73,14 @@ contract TurboRouterTest is DSTestPlus {
 
         vault = new MockERC4626(fei, "Mock Fei Vault", "mvFEI");
 
+        vault2 = new MockERC4626(fei, "Mock Fei Vault2", "mvFEI2");
+
         master.setBooster(booster);
 
         master.setClerk(clerk);
 
         booster.setBoostCapForVault(vault, 1e18);
+        booster.setBoostCapForVault(vault2, 1e18);
         booster.setBoostCapForCollateral(asset, 1e18);
 
         router = new TurboRouter(master, "", IWETH9(address(0))); // empty reverse ens and WETH
@@ -114,6 +119,34 @@ contract TurboRouterTest is DSTestPlus {
         require(safe.totalFeiBoosted() == 1e18);
         require(safe.getTotalFeiBoostedForVault(vault) == 1e18);
         require(vault.balanceOf(address(safe)) == 1e18);
+    }
+
+    function testSafeCreationAndDepositAndBoostMany() public {
+        asset.mint(address(this), 1e18);
+
+        asset.approve(address(router), 1e18);
+        router.pullToken(asset, 1e18, address(router));
+
+        fei.mint(address(feiCToken), 1e18);
+
+        ERC4626[] memory vaults = new ERC4626[](2);
+        vaults[0] = vault;
+        vaults[1] = vault2;
+
+        uint256[] memory sizes = new uint256[](2);
+        sizes[0] = 0.4e18;
+        sizes[1] = 0.6e18;
+
+        TurboSafe safe = router.createSafeAndDepositAndBoostMany(asset, address(this), 1e18, 0, vaults, sizes);
+
+        require(safe.owner() == address(this));
+        require(safe.totalSupply() == 1e18);
+        require(safe.balanceOf(address(this)) == 1e18);
+        require(safe.totalFeiBoosted() == 1e18);
+        require(safe.getTotalFeiBoostedForVault(vault) == 0.4e18);
+        require(safe.getTotalFeiBoostedForVault(vault2) == 0.6e18);
+        require(vault.balanceOf(address(safe)) == 0.4e18);
+        require(vault2.balanceOf(address(safe)) == 0.6e18);
     }
 
     function testFailAuthenticationFromNonUser() public {
@@ -167,5 +200,25 @@ contract TurboRouterTest is DSTestPlus {
         router.sweepAll(safe, address(this), fei);
         require(fei.balanceOf(address(safe)) == 0); 
         require(fei.balanceOf(address(this)) == 0.1e18); 
+    }
+
+    function testLessAll() public {
+        asset.mint(address(this), 1e18);
+
+        asset.approve(address(router), 1e18);
+        router.pullToken(asset, 1e18, address(router));
+
+        fei.mint(address(feiCToken), 1e18);
+
+        TurboSafe safe = router.createSafeAndDepositAndBoost(asset, address(this), 1e18, 0, vault, 1e18);
+
+        router.lessAll(safe, vault);
+
+        require(safe.owner() == address(this));
+        require(safe.totalSupply() == 1e18);
+        require(safe.balanceOf(address(this)) == 1e18);
+        require(safe.totalFeiBoosted() == 0);
+        require(safe.getTotalFeiBoostedForVault(vault) == 0);
+        require(vault.balanceOf(address(safe)) == 0);
     }
 }

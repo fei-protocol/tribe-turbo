@@ -77,6 +77,29 @@ contract TurboRouter is ERC4626RouterBase, ENSReverseRecord {
         safe.setOwner(msg.sender);
     }
 
+    function createSafeAndDepositAndBoostMany(
+        ERC20 underlying, 
+        address to, 
+        uint256 amount, 
+        uint256 minSharesOut, 
+        ERC4626[] calldata boostedVaults, 
+        uint256[] calldata boostedFeiAmounts
+    ) public returns (TurboSafe safe) {
+        (safe, ) = master.createSafe(underlying);
+
+        // approve max from router to save depositor gas in future.
+        approve(underlying, address(safe), type(uint256).max);
+
+        super.deposit(IERC4626(address(safe)), to, amount, minSharesOut);
+
+        require(boostedVaults.length == boostedFeiAmounts.length, "length");
+        for (uint256 i = 0; i < boostedVaults.length; i++) {
+            safe.boost(boostedVaults[i], boostedFeiAmounts[i]);
+        }
+
+        safe.setOwner(msg.sender);
+    }
+
     function deposit(IERC4626 safe, address to, uint256 amount, uint256 minSharesOut) 
         public 
         payable 
@@ -129,6 +152,10 @@ contract TurboRouter is ERC4626RouterBase, ENSReverseRecord {
         safe.less(vault, feiAmount);
     }
 
+    function lessAll(TurboSafe safe, ERC4626 vault) external authenticate(address(safe)) {
+        safe.less(vault, vault.maxWithdraw(address(safe)));
+    }
+
     function sweep(TurboSafe safe, address to, ERC20 token, uint256 amount) external authenticate(address(safe)) {
         safe.sweep(to, token, amount);
     }
@@ -137,8 +164,8 @@ contract TurboRouter is ERC4626RouterBase, ENSReverseRecord {
         safe.sweep(to, token, token.balanceOf(address(safe)));
     }
 
-    function slurpAndLess(TurboSafe safe, ERC4626 vault, uint256 feiAmount) external authenticate(address(safe)) {
+    function slurpAndLessAll(TurboSafe safe, ERC4626 vault) external authenticate(address(safe)) {
         safe.slurp(vault);
-        safe.less(vault, feiAmount);
+        safe.less(vault, vault.maxWithdraw(address(safe)));
     }
 }
