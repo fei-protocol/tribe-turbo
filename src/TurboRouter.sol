@@ -97,14 +97,14 @@ contract TurboRouter is ERC4626RouterBase, ENSReverseRecord {
         return super.mint(safe, to, shares, maxAmountIn);
     }
 
-    function withdraw(IERC4626 safe, address to, uint256 amount, uint256 minSharesOut) 
+    function withdraw(IERC4626 safe, address to, uint256 amount, uint256 maxSharesOut) 
         public 
         payable 
         override 
         authenticate(address(safe)) 
         returns (uint256) 
     {
-        return super.withdraw(safe, to, amount, minSharesOut);
+        return super.withdraw(safe, to, amount, maxSharesOut);
     }
 
     function redeem(IERC4626 safe, address to, uint256 shares, uint256 minAmountOut) 
