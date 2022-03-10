@@ -22,6 +22,7 @@ contract Integration is DSTestPlus {
     MultiRolesAuthority authority;
     Comptroller comptroller;
     TurboAdmin fuseAdmin;
+    TurboLens lens;
 
     MockERC4626 strategy;
 
@@ -38,6 +39,7 @@ contract Integration is DSTestPlus {
         master = deployer.master();
         gibber = deployer.gibber();
         savior = deployer.savior();
+        lens = deployer.lens();
 
         booster = master.booster();
         authority = MultiRolesAuthority(address(master.authority()));
@@ -87,11 +89,18 @@ contract Integration is DSTestPlus {
         hevm.prank(feiDAOTimelock);
         fei.mint(address(strategy), 10_000e18);
 
+        TurboLens.SafeInfo memory safeInfo = lens.getSafeInfo(safe);
+        require(safeInfo.collateralAsset == safe.asset(), "asset");
+        require(safeInfo.collateralAmount == 2_000_000e18, "safe amount");
+        require(safeInfo.debtAmount == 100_000e18, "debt amount");
+        require(safeInfo.boostedAmount == 100_000e18, "boosted amount");
+        require(safeInfo.feiAmount == 110_000e18, "fei amount");
+
         require(fei.balanceOf(address(master)) == 0, "no fei");
         safe.slurp(strategy);
-        require(fei.balanceOf(address(master)) == 9000e18, "master slurps");
+        require(fei.balanceOf(address(master)) == 7500e18, "master slurps");
 
-        safe.less(strategy, 101_000e18);
+        safe.less(strategy, 102_500e18);
 
         require(strategy.balanceOf(address(safe)) == 0, "Safe empty");
 

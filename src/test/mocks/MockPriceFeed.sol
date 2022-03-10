@@ -10,4 +10,8 @@ contract MockPriceFeed is PriceFeed {
     function setUnderlyingPrice(CERC20 cToken, uint256 priceFeed) external {
         getUnderlyingPrice[cToken] = priceFeed;
     }
+
+    function add(address[] calldata underlyings, address[] calldata _oracles) external {}
+   
+    function changeAdmin(address newAdmin) external {}
 }
