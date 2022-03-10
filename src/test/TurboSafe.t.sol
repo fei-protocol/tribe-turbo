@@ -324,7 +324,9 @@ contract TurboSafeTest is DSTestPlus {
         uint256 feePercentage,
         address to
     ) public {
-        if (boostAmount == 0) boostAmount = 1;
+        if (donationAmount == 0) donationAmount = 1;
+
+        boostAmount = uint64(bound(boostAmount, donationAmount, type(uint64).max));
 
         feePercentage = bound(feePercentage, 0, 1e18);
 
@@ -367,6 +369,8 @@ contract TurboSafeTest is DSTestPlus {
     //////////////////////////////////////////////////////////////*/
 
     function testFailSweepVaultShares(address to, uint256 amount) public {
+        if (amount == 0) amount = 1;
+
         safe.sweep(to, vault, amount);
     }
 

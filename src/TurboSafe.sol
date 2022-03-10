@@ -111,7 +111,7 @@ contract TurboSafe is Auth, ERC4626, ReentrancyGuard {
     modifier requiresLocalOrMasterAuth() {
         // Check if the caller is the owner first:
         if (msg.sender != owner) {
-            Authority masterAuth = master.authority(); // Saves a warm SLOAD, about 100 gas.
+            Authority masterAuth = master.authority(); // Avoid wasting gas calling the Master twice.
 
             // If the Master's Authority does not exist or does not accept upfront:
             if (address(masterAuth) == address(0) || !masterAuth.canCall(msg.sender, address(this), msg.sig)) {
@@ -124,6 +124,20 @@ contract TurboSafe is Auth, ERC4626, ReentrancyGuard {
                 );
             }
         }
+
+        _;
+    }
+
+    /// @dev Checks the caller is authorized using the Master's Authority.
+    modifier requiresMasterAuth() {
+        Authority masterAuth = master.authority(); // Avoid wasting gas calling the Master twice.
+
+        // Revert if the Master's Authority does not approve of the call and the caller is not the Master's owner.
+        require(
+            (address(masterAuth) != address(0) && masterAuth.canCall(msg.sender, address(this), msg.sig)) ||
+                msg.sender == master.owner(),
+            "UNAUTHORIZED"
+        );
 
         _;
     }
@@ -219,7 +233,7 @@ contract TurboSafe is Auth, ERC4626, ReentrancyGuard {
 
         // Call the Master to allow it to update its accounting.
         master.onSafeLess(asset, vault, feiAmount);
-        
+
         // If our debt balance decreased, repay the minimum.
         // The surplus Fei will accrue as fees and can be sweeped.
         if (feiAmount > feiDebt) feiAmount = feiDebt;
@@ -320,7 +334,7 @@ contract TurboSafe is Auth, ERC4626, ReentrancyGuard {
     /// @param to The address to send the impounded collateral to.
     /// @param assetAmount The amount of the asset to impound.
     /// @dev Debt must be repaid in advance, or the redemption will fail.
-    function gib(address to, uint256 assetAmount) external nonReentrant requiresLocalOrMasterAuth {
+    function gib(address to, uint256 assetAmount) external nonReentrant requiresMasterAuth {
         emit SafeGibbed(msg.sender, to, assetAmount);
 
         // Withdraw the specified amount of assets from the Turbo Fuse Pool.
