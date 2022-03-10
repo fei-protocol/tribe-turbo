@@ -34,6 +34,11 @@ contract TurboBoosterTest is DSTestPlus {
         booster.setBoostCapForCollateral(collateral, boostCapForCollateral);
         assertEq(booster.getBoostCapForCollateral(collateral), boostCapForCollateral);
 
+        if (boostCapForVault == 0) {
+            hevm.expectRevert(bytes("cap is zero"));
+            booster.setBoostCapForVault(vault, boostCapForVault);
+            return;
+        }
         booster.setBoostCapForVault(vault, boostCapForVault);
         assertEq(booster.getBoostCapForVault(vault), boostCapForVault);
 
