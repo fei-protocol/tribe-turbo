@@ -97,10 +97,13 @@ contract Integration is DSTestPlus {
         require(safeInfo.feiAmount == 110_000e18, "fei amount");
 
         require(fei.balanceOf(address(master)) == 0, "no fei");
+        require(fei.balanceOf(address(safe)) == 0, "no fei");
+
         safe.slurp(strategy);
         require(fei.balanceOf(address(master)) == 7500e18, "master slurps");
+        require(fei.balanceOf(address(safe)) == 2500e18, "safe slurps");
 
-        safe.less(strategy, 102_500e18);
+        safe.less(strategy, 100_000e18);
 
         require(strategy.balanceOf(address(safe)) == 0, "Safe empty");
 

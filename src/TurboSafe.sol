@@ -261,7 +261,7 @@ contract TurboSafe is Auth, ERC4626, ReentrancyGuard {
     /// @notice Accrue any interest earned by the Safe in the Vault.
     /// @param vault The Vault to accrue interest from, if any.
     /// @dev Sends a portion of the interest to the Master, as determined by the Clerk.
-    function slurp(ERC4626 vault) external nonReentrant requiresLocalOrMasterAuth {
+    function slurp(ERC4626 vault) external nonReentrant requiresLocalOrMasterAuth returns(uint256 safeInterestAmount) {
         // Cache the total Fei currently boosting the Vault.
         uint256 totalFeiBoostedForVault = getTotalFeiBoostedForVault[vault];
 
@@ -278,21 +278,14 @@ contract TurboSafe is Auth, ERC4626, ReentrancyGuard {
         uint256 protocolFeeAmount = interestEarned.mulWadDown(protocolFeePercent);
 
         // Compute the amount of Fei the Safe will retain as interest.
-        uint256 safeInterestAmount = interestEarned - protocolFeeAmount;
-
-        // Increase the boost total proportionately.
-        totalFeiBoosted += safeInterestAmount;
-
-        // Update the total Fei held in the Vault proportionately.
-        getTotalFeiBoostedForVault[vault] = totalFeiBoostedForVault + safeInterestAmount;
+        safeInterestAmount = interestEarned - protocolFeeAmount;
 
         emit VaultSlurped(msg.sender, vault, protocolFeeAmount, safeInterestAmount);
 
-        // If we have unaccrued fees, withdraw them from the Vault and transfer them to the Master.
-        if (protocolFeeAmount != 0) vault.withdraw(protocolFeeAmount, address(master), address(this));
+        vault.withdraw(interestEarned, address(this), address(this));
 
-        // Call the Master to allow it to update its accounting.
-        master.onSafeSlurp(asset, vault, safeInterestAmount);
+        // If we have unaccrued fees, withdraw them from the Vault and transfer them to the Master.
+        if (protocolFeeAmount != 0) fei.transfer(address(master), protocolFeeAmount);
     }
 
     /*///////////////////////////////////////////////////////////////
