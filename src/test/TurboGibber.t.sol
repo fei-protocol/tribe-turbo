@@ -113,7 +113,7 @@ contract TurboGibberTest is DSTestPlus {
 
         assertEq(feiCToken.borrowBalanceCurrent(address(safe)), borrowAmount - feiAmount);
         assertEq(asset.balanceOf(to), preBal + assetAmount);
-        assertEq(safe.assetsOf(address(to)), depositAmount - assetAmount);
+        assertEq(safe.previewRedeem(safe.balanceOf(address(to))), depositAmount - assetAmount);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -143,6 +143,6 @@ contract TurboGibberTest is DSTestPlus {
 
         assertEq(feiCToken.borrowBalanceCurrent(address(safe)), 0);
         assertEq(asset.balanceOf(to), preBal + depositAmount);
-        assertEq(safe.assetsOf(address(to)), 0);
+        assertEq(safe.previewRedeem(safe.balanceOf(address(to))), 0);
     }
 }

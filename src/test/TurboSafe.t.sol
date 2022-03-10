@@ -89,7 +89,7 @@ contract TurboSafeTest is DSTestPlus {
         safe.deposit(amount, to);
 
         assertEq(safe.balanceOf(to), amount);
-        assertEq(safe.assetsOf(to), amount);
+        assertEq(safe.previewRedeem(safe.balanceOf(address(to))), amount);
         assertEq(assetCToken.balanceOfUnderlying(address(safe)), amount);
         assertEq(safe.totalAssets(), amount);
     }
@@ -261,7 +261,7 @@ contract TurboSafeTest is DSTestPlus {
 
         assertEq(safe.totalFeiBoosted(), feiAmount);
         assertEq(safe.getTotalFeiBoostedForVault(vault), feiAmount);
-        assertEq(vault.assetsOf(address(safe)), feiAmount);
+        assertEq(vault.previewRedeem(vault.balanceOf(address(safe))), feiAmount);
         assertEq(vault.totalAssets(), feiAmount);
         assertEq(feiCToken.borrowBalanceCurrent(address(safe)), feiAmount);
 
@@ -299,7 +299,7 @@ contract TurboSafeTest is DSTestPlus {
 
         assertEq(safe.totalFeiBoosted(), delta);
         assertEq(safe.getTotalFeiBoostedForVault(vault), delta);
-        assertEq(vault.assetsOf(address(safe)), delta);
+        assertEq(vault.previewRedeem(vault.balanceOf(address(safe))), delta);
         assertEq(vault.totalAssets(), delta);
         assertEq(feiCToken.borrowBalanceCurrent(address(safe)), delta);
 
@@ -353,7 +353,7 @@ contract TurboSafeTest is DSTestPlus {
 
         assertEq(safe.totalFeiBoosted(), delta);
         assertEq(safe.getTotalFeiBoostedForVault(vault), delta);
-        assertEq(vault.assetsOf(address(safe)), delta);
+        assertEq(vault.previewRedeem(vault.balanceOf(address(safe))), delta);
         assertEq(vault.totalAssets(), delta);
         assertEq(feiCToken.borrowBalanceCurrent(address(safe)), boostAmount);
 
