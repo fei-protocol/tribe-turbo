@@ -13,9 +13,20 @@ Fuse liquidity accelerator for friends of the Tribe.
 - `slurp`: accrue fees earned on fei deposited in a vault and split them with the master
 
 ## Getting Started
-
+To fork the repo:
 ```sh
 git clone https://github.com/fei-protocol/tribe-turbo.git
 cd tribe-turbo
 make
 ```
+
+To deploy a fresh devnet Turbo environment:
+
+first run hardhat devnet on another terminal window, make sure that `allowUnlimitedContractSize: true` and `blockGasLimit: 300_000_000`
+
+in tribe turbo repo:
+```
+`sh scripts/setup.sh`
+```
+
+Account #0 should be funded with TRIBE and the turbo pool seeded with 10m FEI liquidity
