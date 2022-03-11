@@ -116,6 +116,9 @@ contract Deployer is Configurer {
         strategy = new MockERC4626(fei, "xFEI", "xFEI");
         booster.setBoostCapForVault(strategy, 2_000_000e18); // 1M boost cap for vault
 
+        // ONLY FOR TESTING
+        turboAuthority.setPublicCapability(TurboMaster.createSafe.selector, true);
+
         // reset admin access on deployer
         turboAuthority.setUserRole(address(this), TURBO_ADMIN_ROLE, false);
         turboAuthority.setOwner(address(turboTimelock));
