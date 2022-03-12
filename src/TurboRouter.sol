@@ -92,9 +92,11 @@ contract TurboRouter is ERC4626RouterBase, ENSReverseRecord {
 
         super.deposit(IERC4626(address(safe)), to, amount, minSharesOut);
 
-        require(boostedVaults.length == boostedFeiAmounts.length, "length");
-        for (uint256 i = 0; i < boostedVaults.length; i++) {
-            safe.boost(boostedVaults[i], boostedFeiAmounts[i]);
+        unchecked {
+            require(boostedVaults.length == boostedFeiAmounts.length, "length");
+            for (uint256 i = 0; i < boostedVaults.length; i++) {
+                safe.boost(boostedVaults[i], boostedFeiAmounts[i]);
+            }     
         }
 
         safe.setOwner(msg.sender);
