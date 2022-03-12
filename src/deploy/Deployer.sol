@@ -2,7 +2,7 @@
 pragma solidity 0.8.10;
 
 import "./Configurer.sol";
-import {MockERC4626} from "solmate/test/utils/mocks/MockERC4626.sol";
+import {FuseERC4626} from "ERC4626/vaults/fuse/FuseERC4626.sol";
 import {TurboLens} from "../modules/TurboLens.sol";
 
 interface PoolDeployer {
@@ -32,8 +32,9 @@ contract Deployer is Configurer {
     address masterOracle = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D;
    
     /// @notice the comptroller implementation for the turbo fuse pool
-    /// TODO change impl to b Protocol impl also edit TurboAdmin
     address poolImpl = 0xE16DB319d9dA7Ce40b666DD2E365a4b8B3C18217;
+
+    address fFEI8 = 0xd8553552f8868C1Ef160eEdf031cF0BCf9686945;
 
     /// @notice the turbo timelock controller delay
     uint256 public timelockDelay = 15 days;
@@ -46,7 +47,7 @@ contract Deployer is Configurer {
 
     TurboLens public lens;
 
-    MockERC4626 public strategy;
+    FuseERC4626 public strategy;
 
     constructor() {
         deploy();
@@ -112,8 +113,7 @@ contract Deployer is Configurer {
         configureClerk(clerk);
         configureSavior(savior);
 
-        // TODO migrate mock to an actual strategy
-        strategy = new MockERC4626(fei, "xFEI", "xFEI");
+        strategy = new FuseERC4626(fFEI8, "FeiRari FEI 4626", "wfFEI-8");
         booster.setBoostCapForVault(strategy, 2_000_000e18); // 1M boost cap for vault
 
         // ONLY FOR TESTING

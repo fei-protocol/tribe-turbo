@@ -24,7 +24,7 @@ contract Integration is DSTestPlus {
     TurboAdmin fuseAdmin;
     TurboLens lens;
 
-    MockERC4626 strategy;
+    ERC4626 strategy;
 
     ERC20 tribe = ERC20(0xc7283b66Eb1EB5FB86327f08e1B5816b0720212B);
     MockERC20 fei = MockERC20(0x956F47F50A910163D8BF957Cf5846D573E7f87CA);
@@ -47,7 +47,7 @@ contract Integration is DSTestPlus {
         comptroller = master.pool();
         fuseAdmin = TurboAdmin(address(comptroller.admin()));
     
-        strategy = new MockERC4626(fei, "xFEI", "xFEI");
+        strategy = deployer.strategy();
 
         configurePool();
     }
@@ -67,6 +67,7 @@ contract Integration is DSTestPlus {
         hevm.stopPrank();
     }
 
+    /// This will fail until the deployer removes public safe creation
     function testFailCreationWithoutApproval() public {
         master.createSafe(tribe);
     }
@@ -86,22 +87,22 @@ contract Integration is DSTestPlus {
 
         assertEq(strategy.balanceOf(address(safe)), 100_000e18);
 
-        hevm.prank(feiDAOTimelock);
-        fei.mint(address(strategy), 10_000e18);
-
         TurboLens.SafeInfo memory safeInfo = lens.getSafeInfo(safe);
         require(safeInfo.collateralAsset == safe.asset(), "asset");
         require(safeInfo.collateralAmount == 2_000_000e18, "safe amount");
         require(safeInfo.debtAmount == 100_000e18, "debt amount");
         require(safeInfo.boostedAmount == 100_000e18, "boosted amount");
-        require(safeInfo.feiAmount == 110_000e18, "fei amount");
+        assertApproxEq(safeInfo.feiAmount, 100_000e18, 1e18);
 
         require(fei.balanceOf(address(master)) == 0, "no fei");
         require(fei.balanceOf(address(safe)) == 0, "no fei");
 
+        hevm.roll(block.number + 10000);
+
         safe.slurp(strategy);
-        require(fei.balanceOf(address(master)) == 7500e18, "master slurps");
-        require(fei.balanceOf(address(safe)) == 2500e18, "safe slurps");
+        require(fei.balanceOf(address(master)) > 0, "master slurps");
+        
+        require(fei.balanceOf(address(safe)) == fei.balanceOf(address(master)) / 3, "safe slurps");
 
         safe.less(strategy, 100_000e18);
 
@@ -124,10 +125,10 @@ contract Integration is DSTestPlus {
         assertEq(safe.balanceOf(address(this)), 2_000_000e18);
 
         safe.boost(strategy, 1_100_000e18);
-        require(strategy.balanceOf(address(safe)) == 1_100_000e18);
+        assertApproxEq(strategy.balanceOf(address(safe)), 1_100_000e18, 1e18);
 
         savior.save(safe, strategy, 1_000_000e18);
 
-        require(strategy.balanceOf(address(safe)) == 100_000e18);
+        assertApproxEq(strategy.balanceOf(address(safe)), 100_000e18, 1e18);
     }
 }
