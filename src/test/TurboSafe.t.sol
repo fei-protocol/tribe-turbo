@@ -351,7 +351,6 @@ contract TurboSafeTest is DSTestPlus {
 
         assertEq(safe.totalFeiBoosted(), boostAmount);
         assertEq(safe.getTotalFeiBoostedForVault(vault), boostAmount);
-        assertEq(vault.previewRedeem(vault.balanceOf(address(safe))), boostAmount);
         assertEq(vault.totalAssets(), boostAmount);
         
         assertEq(feiCToken.borrowBalanceCurrent(address(safe)), boostAmount);
