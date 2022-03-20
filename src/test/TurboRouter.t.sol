@@ -83,7 +83,7 @@ contract TurboRouterTest is DSTestPlus {
         booster.setBoostCapForVault(vault2, 1e18);
         booster.setBoostCapForCollateral(asset, 1e18);
 
-        router = new TurboRouter(master, "", IWETH9(address(0))); // empty reverse ens and WETH
+        router = new TurboRouter(master, address(this), new MockAuthority(true), IWETH9(address(0))); // empty reverse ens and WETH
     }
 
     function testSafeCreation() public {

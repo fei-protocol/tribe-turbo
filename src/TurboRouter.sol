@@ -4,7 +4,7 @@ pragma solidity 0.8.10;
 import {TurboMaster} from "./TurboMaster.sol";
 import {TurboSafe} from "./TurboSafe.sol";
 
-import {ENSReverseRecord} from "ERC4626/ens/ENSReverseRecord.sol";
+import {ENSReverseRecordAuth} from "./ens/ENSReverseRecordAuth.sol";
 import {IERC4626, ERC4626RouterBase, IWETH9, PeripheryPayments} from "ERC4626/ERC4626RouterBase.sol";
 
 import {ERC20} from "solmate/tokens/ERC20.sol";
@@ -25,12 +25,12 @@ import {Auth, Authority} from "solmate/auth/Auth.sol";
  Authentication requires the caller to be the owner of the Safe to perform any ERC4626 method or TurboSafe requiresAuth method. 
  Assumes the Safe's authority gives permission to call these functions to the TurboRouter.
  */
-contract TurboRouter is ERC4626RouterBase, ENSReverseRecord {
+contract TurboRouter is ERC4626RouterBase, ENSReverseRecordAuth {
     using SafeTransferLib for ERC20;
 
     TurboMaster public immutable master;
 
-    constructor (TurboMaster _master, string memory name, IWETH9 weth) ENSReverseRecord(name) PeripheryPayments(weth) {
+    constructor (TurboMaster _master, address _owner, Authority _authority, IWETH9 weth) Auth(_owner, _authority) PeripheryPayments(weth) {
         master = _master;
     }
 
