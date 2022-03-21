@@ -28,6 +28,9 @@ contract TurboLens {
     }
 
     struct SafeInfo {
+        /// @notice the safe's address
+        address safeAddress;
+
         /// @notice the safe collateral
         ERC20 collateralAsset;
 
@@ -63,7 +66,7 @@ contract TurboLens {
     function getAllUserSafes(address owner) external returns (SafeInfo[] memory) {
         TurboSafe[] memory safes = master.getAllSafes();
         uint256 userSafeCount;
-        for (uint256 i = 0; i < safes.length; i++) {
+        for (uint256 i = 1; i < safes.length; i++) {
             if (safes[i].owner() == owner) userSafeCount += 1;
         }
         
@@ -75,7 +78,7 @@ contract TurboLens {
         
         SafeInfo[] memory userSafes = new SafeInfo[](userSafeCount);
         uint256 userSafesAdded;
-        for (uint256 j = 0; j < safes.length; j++) {
+        for (uint256 j = 1; j < safes.length; j++) {
             if (safes[j].owner() == owner) {
                 userSafes[userSafesAdded] = _getSafeInfo(safes[j], strategies, oracle, clerk);
                 userSafesAdded += 1; 
@@ -118,6 +121,7 @@ contract TurboLens {
 
         ERC20 collateral = safe.asset();
         return SafeInfo({
+            safeAddress: address(safe),
             collateralAsset: collateral, 
             collateralAmount: collateralAmount,
             collateralValue: collateralAmount * collateralPrice / 1e18,
