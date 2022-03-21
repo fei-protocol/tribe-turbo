@@ -194,7 +194,7 @@ contract Configurer {
             address(tribe), 
             "Turbo Tribe", 
             "fTRIBE",
-            80e16,
+            60e16,
             50_000_000e18
         );
         booster.setBoostCapForCollateral(tribe, 2_000_000e18); // 1M boost cap TRIBE
@@ -252,5 +252,29 @@ contract Configurer {
         master.setClerk(clerk);
         master.setBooster(booster);
         master.setDefaultSafeAuthority(defaultAuthority);
+    }
+
+    function configureAdmin(MultiRolesAuthority turboAuthority, Comptroller pool, TurboAdmin admin) public {
+        // temporarily assume ownership of pool (required by deployer)
+        pool._acceptAdmin();
+        
+        // Temporarily grant the deployer the turbo admin role for setup
+        turboAuthority.setUserRole(address(this), TURBO_ADMIN_ROLE, true);
+        pool._setPendingAdmin(address(admin));
+        admin._acceptAdmin();
+    }
+    
+    function resetOwnership(
+        MultiRolesAuthority defaultAuthority,
+        MultiRolesAuthority turboAuthority,
+        TimelockController turboTimelock,
+        address admin
+    ) public {
+        if (admin != address(0)) {
+            turboAuthority.setUserRole(admin, TURBO_ADMIN_ROLE, true);
+        }
+        turboAuthority.setUserRole(address(this), TURBO_ADMIN_ROLE, false);
+        turboAuthority.setOwner(address(turboTimelock));
+        defaultAuthority.setOwner(address(turboTimelock));
     }
 }

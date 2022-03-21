@@ -64,9 +64,6 @@ contract Deployer is Configurer {
             masterOracle // master oracle for pool
         );
 
-        // temporarily assume ownership of pool (required by deployer)
-        pool._acceptAdmin();
-
         // Deploy a timelock and authority to use throughout system 
         TimelockController turboTimelock = new TimelockController(timelockDelay, new address[](0), new address[](0));
         MultiRolesAuthority turboAuthority = new MultiRolesAuthority(address(this), Authority(address(0)));
@@ -75,13 +72,10 @@ contract Deployer is Configurer {
         MultiRolesAuthority defaultAuthority = new MultiRolesAuthority(address(this), Authority(address(0)));
         configureDefaultAuthority(defaultAuthority);
 
-        // Temporarily grant the deployer the turbo admin role for setup
-        turboAuthority.setUserRole(address(this), TURBO_ADMIN_ROLE, true);
-
         // Deploy the Turbo Admin and assume pool ownership
         TurboAdmin admin = new TurboAdmin(pool, turboTimelock, turboAuthority);
-        pool._setPendingAdmin(address(admin));
-        admin._acceptAdmin();
+
+        configureAdmin(turboAuthority, pool, admin);
 
         // Create ACL roles and configure timelock
         configureTimelock(turboTimelock, admin);
@@ -106,7 +100,7 @@ contract Deployer is Configurer {
 
         gibber = new TurboGibber(master, address(turboTimelock), Authority(address(0))); // gibber only operates behind timelock, no authority
         savior = new TurboSavior(master, address(turboTimelock), turboAuthority);
-        router = new TurboRouter(master, "", weth); // TODO add ENS everywhere
+        router = new TurboRouter(master, address(turboTimelock), Authority(address(0)), weth);
 
         // configure remaining ACL roles and params
         configureRoles(turboAuthority, defaultAuthority, router, savior, gibber);
@@ -120,7 +114,6 @@ contract Deployer is Configurer {
         turboAuthority.setPublicCapability(TurboMaster.createSafe.selector, true);
 
         // reset admin access on deployer
-        turboAuthority.setUserRole(address(this), TURBO_ADMIN_ROLE, false);
-        turboAuthority.setOwner(address(turboTimelock));
+        resetOwnership(defaultAuthority, turboAuthority, turboTimelock, address(0));
     }
 }
