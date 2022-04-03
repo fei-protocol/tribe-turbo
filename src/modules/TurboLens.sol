@@ -10,6 +10,8 @@ import {TurboBooster} from "./TurboBooster.sol";
 
 import {TurboMaster, TurboSafe} from "../TurboMaster.sol";
 
+// TODO 
+
 /// @title Turbo Lens
 contract TurboLens {
     Comptroller public immutable pool;
@@ -115,10 +117,8 @@ contract TurboLens {
                 uint256 boosted = safe.getTotalFeiBoostedForVault(strategy);
                 uint256 feiAmount = strategy.previewRedeem(strategy.balanceOf(address(safe)));
 
-                if (boosted != 0 || feiAmount != 0) {
-                    totalFeiAmount += feiAmount;
-                    info[i] = StrategyInfo({strategy: strategy, boostedAmount: boosted, feiAmount: feiAmount});
-                }
+                totalFeiAmount += feiAmount;
+                info[i] = StrategyInfo({strategy: strategy, boostedAmount: boosted, feiAmount: feiAmount});
             }
         }
 
