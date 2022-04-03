@@ -36,6 +36,15 @@ contract TurboLens {
 
         /// @notice the balance of collateral assets held by the safe
         uint256 collateralAmount;
+
+        /// @notice collateral price in ETH
+        uint256 collateralPrice;
+
+        /// @notice collateral factor of the collateral asset scaled by 1e18
+        uint256 collateralFactor;
+
+        /// @notice fei price in ETH
+        uint256 feiPrice;
         
         /// @notice the collateral value of assets
         uint256 collateralValue;
@@ -100,36 +109,41 @@ contract TurboLens {
         StrategyInfo[] memory info = new StrategyInfo[](strategies.length);
 
         uint256 totalFeiAmount;
+        {
+            for (uint256 i = 0; i < strategies.length; i++) {
+                ERC4626 strategy = strategies[i];
+                uint256 boosted = safe.getTotalFeiBoostedForVault(strategy);
+                uint256 feiAmount = strategy.previewRedeem(strategy.balanceOf(address(safe)));
 
-        for (uint256 i = 0; i < strategies.length; i++) {
-            ERC4626 strategy = strategies[i];
-            uint256 boosted = safe.getTotalFeiBoostedForVault(strategy);
-            uint256 feiAmount = strategy.previewRedeem(strategy.balanceOf(address(safe)));
-
-            if (boosted != 0 || feiAmount != 0) {
-                totalFeiAmount += feiAmount;
-                info[i] = StrategyInfo({strategy: strategy, boostedAmount: boosted, feiAmount: feiAmount});
+                if (boosted != 0 || feiAmount != 0) {
+                    totalFeiAmount += feiAmount;
+                    info[i] = StrategyInfo({strategy: strategy, boostedAmount: boosted, feiAmount: feiAmount});
+                }
             }
         }
 
-
+        ERC20 collateral = safe.asset();
+        uint256 fee = clerk.getFeePercentageForSafe(safe, collateral);
         uint256 debtAmount = safe.feiTurboCToken().borrowBalanceCurrent(address(safe));
         uint256 feiPrice = oracle.getUnderlyingPrice(safe.feiTurboCToken());
 
         uint256 collateralAmount = safe.previewRedeem(safe.totalSupply());
         uint256 collateralPrice = oracle.getUnderlyingPrice(safe.assetTurboCToken());
+        (, uint256 collateralFactor) = pool.markets(safe.assetTurboCToken());
 
-        ERC20 collateral = safe.asset();
         return SafeInfo({
             safeAddress: address(safe),
             collateralAsset: collateral, 
+            collateralPrice: collateralPrice,
+            collateralFactor: collateralFactor,
+            feiPrice: feiPrice,
             collateralAmount: collateralAmount,
             collateralValue: collateralAmount * collateralPrice / 1e18,
             debtAmount: debtAmount,
             debtValue: debtAmount * feiPrice / 1e18,
             boostedAmount: safe.totalFeiBoosted(),
             feiAmount: totalFeiAmount,
-            tribeDAOFee: clerk.getFeePercentageForSafe(safe, collateral),
+            tribeDAOFee: fee,
             strategyInfo: info
         });
     }
