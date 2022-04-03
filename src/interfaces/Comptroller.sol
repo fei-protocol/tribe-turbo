@@ -125,4 +125,6 @@ interface Comptroller {
     function _toggleAutoImplementations(bool enabled)
         external
         returns (uint256);
+
+    function getAccountLiquidity(address account) external returns (uint256, uint256, uint256);
 }
