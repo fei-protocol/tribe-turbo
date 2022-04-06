@@ -54,7 +54,7 @@ ADDRESS_TRIBE_BALANCE=$(cast call $TRIBE "balanceOf(address)" $ADDRESS --rpc-url
 BALANCE_DECODED=$(cast --abi-decode 'balanceOf(address) returns (uint256)' $ADDRESS_TRIBE_BALANCE)
 echo "\n\nTRIBE balance after:" $BALANCE_DECODED
 
-echo "\n${GREEN}3.${NOCOLOR} seeding Tribe pool fei"
+echo "\n${GREEN}3.${NOCOLOR} seeding the turbo pool fei market"
 echo "\nminting fei"
 MINT_DATA=$(cast calldata "mint(address,uint256)" $TIMELOCK 10000000000000000000000000)
 curl -X POST --data "{\"jsonrpc\":\"2.0\",\"method\":\"eth_sendTransaction\",\"params\":[{\"from\":\"$TIMELOCK\", \"to\": \"$FEI\", \"data\": \"$MINT_DATA\"}],\"id\":67}" http://127.0.0.1:8545/
