@@ -30,6 +30,8 @@ if [ ${#ADDRESS} != 42 ]
 then 
 echo " ${YELLOW} The default address 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 will be used. \n ${NOCOLOR}"
 ADDRESS=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+else
+echo " ${YELLOW} this address: ${ADDRESS} will be used. \n ${NOCOLOR}"
 fi
 
 echo "${GREEN}1.${NOCOLOR} impersonating TribeDAO timelock"
@@ -45,7 +47,7 @@ BALANCE_DECODED=$(cast --abi-decode 'balanceOf(address) returns (uint256)' $ADDR
 echo "\nTRIBE balance before:" $BALANCE_DECODED
 
 echo "\nsending tx"
-ALLOCATE_DATA=$(cast calldata "allocateTribe(address,uint256)" 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266 10000000000000000000000000)
+ALLOCATE_DATA=$(cast calldata "allocateTribe(address,uint256)" $ADDRESS 10000000000000000000000000)
 curl -X POST --data "{\"jsonrpc\":\"2.0\",\"method\":\"eth_sendTransaction\",\"params\":[{\"from\":\"$TIMELOCK\", \"to\": \"$CORE\", \"data\": \"$ALLOCATE_DATA\"}],\"id\":67}" $RPC_URL
 
 ADDRESS_TRIBE_BALANCE=$(cast call $TRIBE "balanceOf(address)" $ADDRESS --rpc-url $RPC_URL)
@@ -75,7 +77,7 @@ if [ $DECODED_RESPONSE = false ]
 then 
 echo "Response: ${RED} $DECODED_RESPONSE ${NOCOLOR}"
 
-echo '\nImpersonating Turbo Timelock \a'
+echo '\nImpersonating Turbo Timelock'
 curl -X POST --data "{\"jsonrpc\":\"2.0\",\"method\":\"hardhat_impersonateAccount\",\"params\":[\"$TURBO_TIMELOCK\"],\"id\":67}" $RPC_URL
 
 echo "\n\nseeding Turbo Timelock"
@@ -101,7 +103,7 @@ echo "Response: ${GREEN} $DECODED_RESPONSE"
 echo "${GREEN}You now can use $ADDRESS to create safes"
 fi
 
-echo "${YELLOW}=======================================${NOCOLOR}"
+echo "${YELLOW}=======================================${NOCOLOR}\a"
 
 
 
