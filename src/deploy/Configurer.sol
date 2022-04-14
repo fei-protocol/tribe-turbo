@@ -62,6 +62,10 @@ contract Configurer {
     /// @notice limited version of TURBO_ADMIN_ROLE which can manage collateral and vault parameters.
     uint8 public constant TURBO_STRATEGIST_ROLE = 7;
 
+    uint8 public constant CREATE_SAFE_ROLE = 8;
+
+    // TODO: Deploy TurboRouterAuth with existing Turbo Authority. Create safe role gets these powers. Grant role to Balancer + Olympus + whoever wants to test
+
     /******************** CONFIGURATION ********************/
 
     /// @notice configure the turbo timelock. Requires TIMELOCK_ADMIN_ROLE over timelock.
@@ -74,6 +78,13 @@ contract Configurer {
 
     /// @notice configure the turbo authority. Requires ownership over turbo authority.
     function configureAuthority(MultiRolesAuthority turboAuthority) public {
+        // CREATE_SAFE_ROLE
+        turboAuthority.setRoleCapability(CREATE_SAFE_ROLE, TurboMaster.createSafe.selector, true);
+        turboAuthority.setRoleCapability(CREATE_SAFE_ROLE, TurboRouter.createSafe.selector, true);
+        turboAuthority.setRoleCapability(CREATE_SAFE_ROLE, TurboRouter.createSafeAndDeposit.selector, true);
+        turboAuthority.setRoleCapability(CREATE_SAFE_ROLE, TurboRouter.createSafeAndDepositAndBoost.selector, true);
+        turboAuthority.setRoleCapability(CREATE_SAFE_ROLE, TurboRouter.createSafeAndDepositAndBoostMany.selector, true);
+
         // GIBBER_ROLE
         turboAuthority.setRoleCapability(GIBBER_ROLE, TurboSafe.gib.selector, true);
         
