@@ -64,6 +64,8 @@ contract Configurer {
 
     uint8 public constant CREATE_SAFE_ROLE = 8;
 
+    // TODO: Deploy TurboRouterAuth with existing Turbo Authority. Create safe role gets these powers. Grant role to Balancer + Olympus + whoever wants to test
+
     /******************** CONFIGURATION ********************/
 
     /// @notice configure the turbo timelock. Requires TIMELOCK_ADMIN_ROLE over timelock.
