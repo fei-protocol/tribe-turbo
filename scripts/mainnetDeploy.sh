@@ -70,3 +70,4 @@ echo "ROUTER=$ROUTER"
 # Increase timelock timer to a large value
 # Remove turbo admin role from admin
 # revoke admin role from timelock controller
+# revoke proposer role from timelock controller
